@@ -17,15 +17,15 @@ var Server struct {
 	LogLevel           string
 	LogPath            string
 	BuringPointLogPath string
-	LogSplitHour       int
+	LogSplitHour       int32
 	WSAddr             string
 	CertFile           string
 	KeyFile            string
 	TCPAddr            string
-	MaxConnNum         int
-	ConsolePort        int
+	MaxConnNum         int32
+	ConsolePort        int32
 	ProfilePath        string
-	PropIdList         []int
+	PropIdList         []int32
 	//平台库
 	DbList []DatabaseInfo
 	//etcd配置
@@ -53,8 +53,8 @@ type Node2EtcdInfo struct {
 	TCPAddr      string
 	CertFile     string
 	KeyFile      string
-	MaxConnNum   int
-	CurOnlineNum int
+	MaxConnNum   int32
+	CurOnlineNum int32
 }
 
 var Server2Etcd struct {
@@ -70,32 +70,32 @@ type ProxyNodeInfo struct {
 	RemoteAddr string
 	CertFile   string
 	KeyFile    string
-	MaxConnNum int
+	MaxConnNum int32
 }
 
 type RoomInfoDef struct {
 	NodeName             string //gamename_gameid_roomlevel
 	NodeID               string //pcid_roomserialid
 	CfgDir               string
-	GameID               int
-	RoomLevel            int
-	MaxTableNum          int //最大桌子数
-	MaxOnlineNum         int //最大在线人数
-	MaxTableChair        int //一桌最多人数
+	GameID               int32
+	RoomLevel            int32
+	MaxTableNum          int32 //最大桌子数
+	MaxOnlineNum         int32 //最大在线人数
+	MaxTableChair        int32 //一桌最多人数
 	RoomCoinDownLimit    int64
 	RoomCoinUpLimit      int64
-	GameStartPlayer      int  //满多少人开局
-	GameStartCheckTime   int  //检查开局间隔时长
-	SitNoHandUpCheckTime int  //入座未举手检测时长
-	CanWatchGame         int8 //是否可以旁观游戏
-	BasePoint            int
-	TaxRate              int //千分比
-	TableTax             int //固定桌费
-	ServerStatus         int
+	GameStartPlayer      int32 //满多少人开局
+	GameStartCheckTime   int32 //检查开局间隔时长
+	SitNoHandUpCheckTime int32 //入座未举手检测时长
+	CanWatchGame         int8  //是否可以旁观游戏
+	BasePoint            int32
+	TaxRate              int32 //千分比
+	TableTax             int32 //固定桌费
+	ServerStatus         int32
 	GameName             string
 	ServerName           string
-	PropIdList           []int
-	CurOnlineNum         int
+	PropIdList           []int32
+	CurOnlineNum         int32
 }
 
 var RoomInfo RoomInfoDef
@@ -124,14 +124,16 @@ func init() {
 	}
 	roomflags := strings.Split(RoomInfo.NodeName, "_")
 	RoomInfo.CfgDir = strings.Join(roomflags[:2], "_")
-	RoomInfo.GameID, err = strconv.Atoi(roomflags[1])
+	gameID, err := strconv.Atoi(roomflags[1])
 	if err != nil {
 		log.Fatal("%v", err)
 	}
-	RoomInfo.RoomLevel, err = strconv.Atoi(roomflags[2])
+	RoomInfo.GameID = int32(gameID)
+	roomLevel, err := strconv.Atoi(roomflags[2])
 	if err != nil {
 		log.Fatal("%v", err)
 	}
+	RoomInfo.RoomLevel = int32(roomLevel)
 	nodeinfo := Node2EtcdInfo{}
 	nodeinfo.CertFile = Server.CertFile
 	nodeinfo.KeyFile = Server.KeyFile

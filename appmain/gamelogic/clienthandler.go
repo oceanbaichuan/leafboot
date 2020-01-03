@@ -80,7 +80,12 @@ func (f *FactoryGameLogic) handleLoginGameReq(args []interface{}) {
 		Loginip:  req.LoginIP,
 		Proplist: conf.RoomInfo.PropIdList,
 	}
-	db.SelectAccount(&dbloginreq, &dbloginres)
+	err = db.SelectAccount(&dbloginreq, &dbloginres)
+	log.Debug("SelectAccount err:%v", err)
+	db.SelectUserInfo(&dbloginreq, &dbloginres)
+	log.Debug("SelectUserInfo err:%v", err)
+	db.SelectGameData(&dbloginreq, &dbloginres)
+	log.Debug("SelectGameData err:%v", err)
 	//db.SelectAccount(req.Userid, ServerInfo.GameID,ServerInfo.RoomID ServerInfo.PropIdList, &dblogin)
 	//登录成功后，添加节点
 	f.handleLoginRes([]interface{}{&dbloginres, succplayer})
@@ -122,7 +127,7 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 	dbloginres := args[0].(*msg.LoginRes)
 	succplayer.Usernodeinfo = *dbloginres
 	succplayer.Usergamestatus = base.PlayerstatuWaitSitDown
-	if dbloginres.Freezed {
+	if dbloginres.Freezed == 0 {
 		dbloginres.Errcode = msg.LoginErr_accountforbidden
 		base.SendRspMsg(succplayer, *dbloginres)
 		f.ClosePlayer(succplayer)
@@ -243,7 +248,7 @@ func (f *FactoryGameLogic) handleSitdownReq(args []interface{}) {
 	}
 	f.ArrangePlayerSitDownReq(player, req.Tableid, req.Chairid)
 }
-func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, tableid int, chairid int) {
+func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, tableid int32, chairid int32) {
 	var fittable base.ITable
 	sitres := msg.Sitdownres{}
 	if tableid > 0 && tableid <= conf.RoomInfo.MaxTableNum {
@@ -328,7 +333,7 @@ func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, tabl
 	}
 	f.CallBackSitDown(player, fittable)
 }
-func (f *FactoryGameLogic) AutoSearchTable(playernode *base.ClientNode) (base.ITable, int, int, error) {
+func (f *FactoryGameLogic) AutoSearchTable(playernode *base.ClientNode) (base.ITable, int32, int32, error) {
 	var oktable base.ITable
 	var err error
 	tablechair := -1
@@ -354,10 +359,10 @@ func (f *FactoryGameLogic) AutoSearchTable(playernode *base.ClientNode) (base.IT
 	if oktable == nil {
 		err = errors.New("no fit table found")
 	}
-	return oktable, tableid, tablechair, err
+	return oktable, int32(tableid), int32(tablechair), err
 }
 
-func (f *FactoryGameLogic) FixSearchTable(playernode *base.ClientNode, tableid int, chairid int) (base.ITable, int, int, error) {
+func (f *FactoryGameLogic) FixSearchTable(playernode *base.ClientNode, tableid int32, chairid int32) (base.ITable, int32, int32, error) {
 	var err error
 	var oktable base.ITable
 	gametableint, _ := f.GetTable(tableid)
@@ -367,15 +372,15 @@ func (f *FactoryGameLogic) FixSearchTable(playernode *base.ClientNode, tableid i
 	}
 	for j, playerint := range fittable.TablePlayers {
 		//log.Debug("j:%v playerint:%v", j, playerint)
-		if j == chairid-1 && playerint == nil {
+		if int32(j) == chairid-1 && playerint == nil {
 			fittable.TablePlayers[j] = playernode
 			oktable = fittable
-			chairid = j + 1
+			chairid = int32(j) + 1
 			break
 		} else if chairid < 1 && playerint == nil {
 			fittable.TablePlayers[j] = playernode
 			oktable = fittable
-			chairid = j + 1
+			chairid = int32(j) + 1
 			break
 		}
 	}

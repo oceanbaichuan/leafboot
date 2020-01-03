@@ -57,7 +57,7 @@ func (f *FactoryGameLogic) Start(netgate *gate.Gate) error {
 	return nil
 }
 func (f *FactoryGameLogic) CreateRoom() error {
-	for i := 0; i < conf.RoomInfo.MaxTableNum; i++ {
+	for i := 0; i < int(conf.RoomInfo.MaxTableNum); i++ {
 		table := f.OnCreateTable()
 		table.Init(conf.RoomInfo.MaxTableChair, f)
 		f.GameTables = append(f.GameTables, table)
@@ -67,7 +67,7 @@ func (f *FactoryGameLogic) CreateRoom() error {
 func (f *FactoryGameLogic) OnCreateTable() base.ITable {
 	return &base.GameTable{}
 }
-func (f *FactoryGameLogic) GetTable(tableid int) (base.ITable, error) {
+func (f *FactoryGameLogic) GetTable(tableid int32) (base.ITable, error) {
 	if tableid < 1 || tableid > conf.RoomInfo.MaxTableNum {
 		return nil, errors.New("table index out of range")
 	}
@@ -180,7 +180,7 @@ func (f *FactoryGameLogic) SendRoomInfo(player base.IPlayerNode) {
 }
 
 //SavePlayergamecoin 游戏结束调用，用户游戏过程中产生的金币变化更新
-func (f *FactoryGameLogic) SavePlayerGameCoin(player base.IPlayerNode, gamecoin int64, writesource int) {
+func (f *FactoryGameLogic) SavePlayerGameCoin(player base.IPlayerNode, gamecoin int64, writesource int32) {
 	playernode := player.(*base.ClientNode)
 	playernode.Useraccountdbw.Gamecoin += gamecoin
 	f.WriteAttributionLog(&msg.AttributeChangelog{})
@@ -188,7 +188,7 @@ func (f *FactoryGameLogic) SavePlayerGameCoin(player base.IPlayerNode, gamecoin 
 }
 
 //SavePlayergoldbean 游戏结束调用，用户游戏过程中产生的金豆变化更新
-func (f *FactoryGameLogic) SavePlayerGoldBean(player base.IPlayerNode, goldbean int, writesource int) {
+func (f *FactoryGameLogic) SavePlayerGoldBean(player base.IPlayerNode, goldbean int32, writesource int32) {
 	playernode := player.(*base.ClientNode)
 	playernode.Useraccountdbw.Goldbean += goldbean
 	f.WriteAttributionLog(&msg.AttributeChangelog{})
@@ -197,7 +197,7 @@ func (f *FactoryGameLogic) SavePlayerGoldBean(player base.IPlayerNode, goldbean 
 }
 
 //SavePlayerprop 游戏结束调用，用户游戏过程中产生的道具变化更新
-func (f *FactoryGameLogic) SavePlayerProp(player base.IPlayerNode, propinfo msg.UserPropChange, writesource int) {
+func (f *FactoryGameLogic) SavePlayerProp(player base.IPlayerNode, propinfo msg.UserPropChange, writesource int32) {
 	playernode := player.(*base.ClientNode)
 	propidlist, okid := playernode.Useraccountdbw.Proplist[propinfo.Propid]
 	log.Debug("SavePlayerProp userid:%v propinfo:%v writesource:%v", playernode.Usernodeinfo.Userid, propinfo, writesource)
@@ -208,14 +208,14 @@ func (f *FactoryGameLogic) SavePlayerProp(player base.IPlayerNode, propinfo msg.
 				propinfo.Propnum += propinfo.Propnum
 
 			}
-			if propinfo.Deadline != 0 {
-				propinfo.Deadline += propinfo.Deadline
+			if propinfo.Proptime != 0 {
+				propinfo.Proptime += propinfo.Proptime
 			}
 		} else {
 			propidlist[propinfo.Proptype] = propinfo
 		}
 	} else {
-		proptypelist := make(map[int]msg.UserPropChange)
+		proptypelist := make(map[int32]msg.UserPropChange)
 		proptypelist[propinfo.Proptype] = propinfo
 		playernode.Useraccountdbw.Proplist[propinfo.Propid] = proptypelist
 	}
@@ -226,9 +226,9 @@ func (f *FactoryGameLogic) SavePlayerProp(player base.IPlayerNode, propinfo msg.
 			if propinfo.Propnum != 0 {
 				f.WriteAttributionLog(&msg.AttributeChangelog{})
 				curpropinfo.Propnum += propinfo.Propnum
-			} else if propinfo.Deadline != 0 {
+			} else if propinfo.Proptime != 0 {
 				f.WriteAttributionLog(&msg.AttributeChangelog{})
-				curpropinfo.Deadline = time.Unix(curpropinfo.Deadline.Unix()+propinfo.Deadline, 0)
+				curpropinfo.Proptime = curpropinfo.Proptime + propinfo.Proptime
 			}
 			bExists = true
 			break
@@ -239,19 +239,19 @@ func (f *FactoryGameLogic) SavePlayerProp(player base.IPlayerNode, propinfo msg.
 			Propid:   propinfo.Propid,
 			Proptype: propinfo.Proptype,
 			Propnum:  propinfo.Propnum,
-			Deadline: time.Unix(time.Now().Unix()+propinfo.Deadline, 0),
+			Proptime: propinfo.Proptime,
 		}
 		playernode.Usernodeinfo.Proplist = append(playernode.Usernodeinfo.Proplist, tempprop)
 		if propinfo.Propnum != 0 {
 			f.WriteAttributionLog(&msg.AttributeChangelog{})
-		} else if propinfo.Deadline != 0 {
+		} else if propinfo.Proptime != 0 {
 			f.WriteAttributionLog(&msg.AttributeChangelog{})
 		}
 	}
 }
 
 //SavePlayergameend 游戏结束调用，用户游戏过程中产生的金豆变化更新
-func (f *FactoryGameLogic) SavePlayerGameEnd(player base.IPlayerNode, datachanged base.Userplaygamedata, writesource int) {
+func (f *FactoryGameLogic) SavePlayerGameEnd(player base.IPlayerNode, datachanged base.Userplaygamedata, writesource int32) {
 	playernode := player.(*base.ClientNode)
 	log.Debug("SavePlayerGameEnd userid:%v datachanged:%v", playernode.Usernodeinfo.Userid, datachanged)
 	if datachanged.Gamecoin != 0 {
@@ -280,7 +280,7 @@ func (f *FactoryGameLogic) SavePlayerGameEnd(player base.IPlayerNode, datachange
 	tableint, _ := f.GetTable(playernode.Usertableid)
 	if tableint != nil {
 		tableitem := tableint.(*base.GameTable)
-		playtime := (int)(time.Now().Unix() - tableitem.TimeGameBegin.Unix())
+		playtime := (int32)(time.Now().Unix() - tableitem.TimeGameBegin.Unix())
 		playernode.Useraccountdbw.Gameplaytime += playtime
 		playernode.Usernodeinfo.GamePlayTime += playtime
 	}

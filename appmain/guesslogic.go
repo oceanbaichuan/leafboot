@@ -62,7 +62,7 @@ func (g *GuessLogic) handleGuessReq(args []interface{}) {
 	base.SendRspMsg(player, gussres)
 	tableintf, _ := g.GetTable(player.Usertableid)
 	table := tableintf.(*base.GameTable)
-	var overguesscount int = 0
+	var overguesscount int32 = 0
 	for _, v := range table.TablePlayers {
 		if v.(*base.ClientNode).Usergamestatus == PlayerstatuWaitOtherGuess {
 			overguesscount++

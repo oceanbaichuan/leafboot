@@ -29,18 +29,18 @@ type ClientNode struct {
 	Usernodeinfo          msg.LoginRes
 	Useraccountdbw        Userplaygamedata //可更新入用户库数据
 	Userlogindeviceid     string
-	Userlogindevicetype   int
+	Userlogindevicetype   int32
 	Userloginchannellong  string
-	Userloginchannelshort int
+	Userloginchannelshort int32
 	Userloginfrom         string
-	Userloginsiteid       int
-	Usergamestatus        int       //游戏状态
+	Userloginsiteid       int32
+	Usergamestatus        int32     //游戏状态
 	Useroffline           bool      //是否掉线
 	Userisrobot           bool      //是否机器人
 	Userlastopertime      time.Time //上次操作时间,只针对登录，入座，准备,打牌,离桌做记录
 	Userlogintime         time.Time //登录时间点
-	Usertableid           int       //座位号
-	Userchairid           int       //椅子号
+	Usertableid           int32     //座位号
+	Userchairid           int32     //椅子号
 	ProxyClientID         uint64    //代理客户端ID
 	LoginIP               string    //客户端IP
 }
@@ -121,7 +121,7 @@ func (player *ClientNode) Initialize() {
 	player.Userisrobot = false
 	player.Usergamestatus = PlayerstatuInitial
 	player.Usernodeinfo = msg.LoginRes{}
-	player.Useraccountdbw.Proplist = make(map[int]map[int]msg.UserPropChange)
+	player.Useraccountdbw.Proplist = make(map[int32]map[int32]msg.UserPropChange)
 }
 func (player *ClientNode) OnTimer() {
 	//sitdown too long to handup,close or autohandup
@@ -158,8 +158,8 @@ func (player *ClientNode) SyncOldPlayerData(playerold IPlayerNode) {
 					bhasprop = true
 					if prop.Propnum != 0 {
 						player.Usernodeinfo.Proplist[i].Propnum += prop.Propnum
-					} else if prop.Deadline != 0 {
-						player.Usernodeinfo.Proplist[i].Deadline = time.Unix(player.Usernodeinfo.Proplist[i].Deadline.Unix()+prop.Deadline, 0)
+					} else if prop.Proptime != 0 {
+						player.Usernodeinfo.Proplist[i].Proptime = player.Usernodeinfo.Proplist[i].Proptime + prop.Proptime
 					}
 					break
 				}
@@ -169,7 +169,7 @@ func (player *ClientNode) SyncOldPlayerData(playerold IPlayerNode) {
 					Propid:   prop.Propid,
 					Proptype: prop.Proptype,
 					Propnum:  prop.Propnum,
-					Deadline: time.Unix(time.Now().Unix()+prop.Deadline, 0),
+					Proptime: time.Now().Unix() + prop.Proptime,
 				}
 				player.Usernodeinfo.Proplist = append(player.Usernodeinfo.Proplist, propinfo)
 			}

@@ -19,22 +19,22 @@ type TableTimer struct {
 }
 type GameTable struct {
 	GameRoundNum   int64 //游戏对局编号
-	SitdownPlayers int
-	ReadyPlayers   int
+	SitdownPlayers int32
+	ReadyPlayers   int32
 	TimeGameBegin  time.Time
-	TableStatus    int
+	TableStatus    int32
 	TablePlayers   []IPlayerNode
 	WatchPlayers   []IPlayerNode
-	Tabletimemap   map[int]*TableTimer //定时器
+	Tabletimemap   map[int32]*TableTimer //定时器
 	gameLogic      IGameLogic
 }
 
-func (table *GameTable) Init(chairnum int, flogic IGameLogic) {
+func (table *GameTable) Init(chairnum int32, flogic IGameLogic) {
 	table.TablePlayers = make([]IPlayerNode, chairnum)
-	for j := 0; j < chairnum; j++ {
+	for j := 0; j < int(chairnum); j++ {
 		table.TablePlayers[j] = nil
 	}
-	table.Tabletimemap = make(map[int]*TableTimer)
+	table.Tabletimemap = make(map[int32]*TableTimer)
 	table.gameLogic = flogic
 }
 func (table *GameTable) ResetTable() {
@@ -63,7 +63,7 @@ func (table *GameTable) OnTimerCheckBegin() {
 		table.SetTimer(Tabletimer_checkbegin, t.d, table.OnTimerCheckBegin)
 	}
 }
-func (table *GameTable) KillTimer(timerid int) {
+func (table *GameTable) KillTimer(timerid int32) {
 	if t, ok := table.Tabletimemap[timerid]; ok {
 		if t.t != nil {
 			t.t.Stop()
@@ -71,7 +71,7 @@ func (table *GameTable) KillTimer(timerid int) {
 		table.Tabletimemap[timerid] = nil
 	}
 }
-func (table *GameTable) SetTimer(timerid int, d time.Duration, cb func()) error {
+func (table *GameTable) SetTimer(timerid int32, d time.Duration, cb func()) error {
 	if _, ok := table.Tabletimemap[timerid]; ok {
 		return errors.New("timeid is already in use")
 	}

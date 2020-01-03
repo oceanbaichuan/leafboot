@@ -14,7 +14,7 @@ type Module struct {
 
 func (m *Module) OnInit() {
 	m.Gate = &gate.Gate{
-		MaxConnNum:      conf.Server.MaxConnNum,
+		MaxConnNum:      int(conf.Server.MaxConnNum),
 		PendingWriteNum: conf.PendingWriteNum,
 		MaxMsgLen:       conf.MaxMsgLen,
 		WSAddr:          conf.Server.WSAddr,

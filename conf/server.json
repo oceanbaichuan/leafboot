@@ -8,33 +8,33 @@
 	"DbList":[{
 		"DbType":"mysql",
 		"Host":"10.7.125.120",
-		"Port":1433,
-		"UserName":"devgame",
-		"Passwd":"devgame@123",
+		"Port":3306,
+		"UserName":"dev_game",
+		"Passwd":"odao123456",
 		"DataBase":"plat_account_db"
 	},
 	{
 		"DbType":"mysql",
 		"Host":"10.7.125.120",
-		"Port":1433,
-		"UserName":"devgame",
-		"Passwd":"devgame@123",
+		"Port":3306,
+		"UserName":"dev_game",
+		"Passwd":"odao123456",
 		"DataBase":"game_user_db"
 	},
 	{
 		"DbType":"mysql",
 		"Host":"10.7.125.120",
-		"Port":1433,
-		"UserName":"devgame",
-		"Passwd":"devgame@123",
-		"DataBase":"game_majiang_db"
+		"Port":3306,
+		"UserName":"dev_game",
+		"Passwd":"odao123456",
+		"DataBase":"game_data_db"
 	},
 	{
 		"DbType":"mysql",
 		"Host":"10.7.125.120",
-		"Port":1433,
-		"UserName":"devgame",
-		"Passwd":"devgame@123",
+		"Port":3306,
+		"UserName":"dev_game",
+		"Passwd":"odao123456",
 		"DataBase":"game_log_db"
 	}],
 	"EtcdAddr":"http://10.7.125.163:3001",

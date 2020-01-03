@@ -20,3 +20,7 @@ type GameDataRecord struct {
 	LoginIP       string
 	UpdateTime    time.Time
 }
+
+func (a GameDataRecord) TableName() string {
+	return "game_data_record"
+}

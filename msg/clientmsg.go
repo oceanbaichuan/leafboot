@@ -47,55 +47,56 @@ const (
 // }
 type LoginRes struct {
 	Userid         int64
-	Errcode        int
+	Errcode        int32
 	Account        string    //用户账号
-	AcIndex        int       //用户账号所属机器码的序号
-	AcType         int       //账号类型
-	Freezed        bool      //账号是否冻结
+	AcIndex        int32     //用户账号所属机器码的序号
+	AcType         int16     //账号类型
+	Freezed        int8      //账号是否冻结
 	NickName       string    //用户昵称
 	GameCoin       int64     //积分
 	BankCoin       int64     //
-	GoldBean       int       //金豆
-	AllGoldBean    int       //
-	RegChan        int       //注册短渠道
+	GoldBean       int32     //金豆
+	AllGoldBean    int32     //
+	RegChan        int32     //注册短渠道
 	RegTime        time.Time //注册时间
-	RegSiteID      int
+	RegSiteID      int32
 	Gender         int8   //性别
-	HeadID         int    //系统头像id
+	HeadID         int32  //系统头像id
 	ThirdHeadUrl   string //第三方头像地址
 	Phonebinded    string //绑定手机号
-	VipExp         int    //
-	GameWinTimes   int    //
-	GameLoseTimes  int    //
-	GamePlayTime   int    //
-	PlatPlayTime   int    //
-	GameOnlineTime int    //
-	PlatOnlineTime int    //
+	VipExp         int32  //
+	GameExp        int32  //
+	GameWinTimes   int32  //
+	GameLoseTimes  int32  //
+	GamePlayTime   int32  //
+	PlatPlayTime   int32  //
+	GameOnlineTime int32  //
+	PlatOnlineTime int32  //
 	GameCoinPlay   int64  //
 	GameCoinWin    int64  //
 	GameCoinLose   int64  //
-	OtherGameID    int    //
+	OtherGameID    int32  //
 	OtherRoomID    string //
-	GameStatus     int
+	GameStatus     int8
 	Proplist       []PropInfo //道具列表
 }
 
 type TablePlayer struct {
 	Userid        int64 //
-	Siteid        int
+	Siteid        int32
 	Nickname      string //
 	Gamecoin      int64
 	Bankcoin      int64
-	Goldbean      int
-	Sysheadid     int
+	Goldbean      int32
+	Sysheadid     int32
 	Thirdheadurl  string //
 	Gender        int8
-	Vipexp        int //
-	Gamewintimes  int //
-	Gamelosetimes int //
-	Tableid       int
-	Chairid       int //
-	Gamestatus    int //
+	Vipexp        int32 //
+	Gamewintimes  int32 //
+	Gamelosetimes int32 //
+	Tableid       int32
+	Chairid       int32 //
+	Gamestatus    int32 //
 }
 
 type Loginagainres struct {
@@ -112,14 +113,14 @@ const (
 )
 
 type Sitdownreq struct {
-	Tableid int //
-	Chairid int //
+	Tableid int32 //
+	Chairid int32 //
 }
 
 type Sitdownres struct {
-	Errcode int //错误码
-	Tableid int //桌子号
-	Chairid int //椅子号
+	Errcode int32 //错误码
+	Tableid int32 //桌子号
+	Chairid int32 //椅子号
 	Players []TablePlayer
 }
 
@@ -141,12 +142,12 @@ type Handupreq struct {
 }
 
 type Handupres struct {
-	Errcode int
+	Errcode int32
 }
 
 type Handupnotice struct {
-	Tableid int
-	Chairid int
+	Tableid int32
+	Chairid int32
 }
 
 //Tableplayerleave
@@ -156,16 +157,16 @@ const (
 )
 
 type Tableplayerleavereq struct {
-	Leavetype int //离开类型
+	Leavetype int32 //离开类型
 }
 type Tableplayerleaveres struct {
-	Errcode   int
-	Leavetype int //离开类型
+	Errcode   int32
+	Leavetype int32 //离开类型
 }
 type Tableplayerleavenotice struct {
 	Userid  int64 //
-	Tableid int
-	Chairid int //
+	Tableid int32
+	Chairid int32 //
 }
 
 //
@@ -176,6 +177,6 @@ const (
 )
 
 type Kickoutres struct {
-	Errcode int
+	Errcode int32
 	Errmsg  string
 }

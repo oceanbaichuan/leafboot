@@ -15,9 +15,9 @@ func StartGame(fLogic base.IGameLogic, fRobot base.IRobot) error {
 	lconf.LogLevel = conf.Server.LogLevel
 	lconf.LogPath = conf.Server.LogPath
 	lconf.BuringPointLogPath = conf.Server.BuringPointLogPath
-	lconf.LogSplitHour = conf.Server.LogSplitHour
+	lconf.LogSplitHour = int(conf.Server.LogSplitHour)
 	lconf.LogFlag = conf.LogFlag
-	lconf.ConsolePort = conf.Server.ConsolePort
+	lconf.ConsolePort = int(conf.Server.ConsolePort)
 	lconf.ProfilePath = conf.Server.ProfilePath
 	//绑定游戏逻辑层
 	base.GameChanRPC = game.ChanRPC

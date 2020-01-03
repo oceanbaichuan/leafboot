@@ -178,7 +178,7 @@ func watchGateServer(serverName string) {
 		rsp, err := gameAPI.Watcher(serverName, &client.WatcherOptions{Recursive: true}).Next(context.Background())
 		if err == nil {
 			paraseEtcdNode(rsp.Action, rsp.Node)
-			log.Debug("watchEtcdConf action:%s key:%s", rsp.Action, rsp.Node.Key)
+			//log.Debug("watchEtcdConf action:%s key:%s", rsp.Action, rsp.Node.Key)
 		} else {
 			time.Sleep(2 * time.Second)
 		}
