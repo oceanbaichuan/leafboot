@@ -1,0 +1,42 @@
+{
+	"LogLevel": "debug",
+	"LogPath": "",
+	"BuringPointLogPath":"log/buringpoint.log",
+	"WSAddr": "0.0.0.0:3563",
+	"TCPAddr": "0.0.0.0:3564",
+	"MaxConnNum": 20000,
+	"DbList":[{
+		"DbType":"mysql",
+		"Host":"10.7.125.120",
+		"Port":1433,
+		"UserName":"devgame",
+		"Passwd":"devgame@123",
+		"DataBase":"plat_account_db"
+	},
+	{
+		"DbType":"mysql",
+		"Host":"10.7.125.120",
+		"Port":1433,
+		"UserName":"devgame",
+		"Passwd":"devgame@123",
+		"DataBase":"game_user_db"
+	},
+	{
+		"DbType":"mysql",
+		"Host":"10.7.125.120",
+		"Port":1433,
+		"UserName":"devgame",
+		"Passwd":"devgame@123",
+		"DataBase":"game_majiang_db"
+	},
+	{
+		"DbType":"mysql",
+		"Host":"10.7.125.120",
+		"Port":1433,
+		"UserName":"devgame",
+		"Passwd":"devgame@123",
+		"DataBase":"game_log_db"
+	}],
+	"EtcdAddr":"http://10.7.125.163:3001",
+	"EtcdKey":["/ServerList/ConnectorServer"]
+}

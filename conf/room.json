@@ -1,0 +1,19 @@
+{
+	"NodeName":"DZMJ_601_1",
+	"NodeID":"pc01_1_1",
+	"MaxTableNum"          :300,
+	"MaxOnlineNum"         :1000,
+	"MaxTableChair"        :4,
+	"RoomCoinDownLimit"    :1000,
+	"RoomCoinUpLimit"      :0,
+	"GameStartPlayer"      :4,
+	"GameStartCheckTime"   :2,
+	"SitNoHandUpCheckTime" :10,
+	"CanWatchGame"         :0,
+	"BasePoint"            :50,
+	"TaxRate"              :30,
+	"ServerStatus"         :1,
+	"GameName"             :"大众麻将",
+	"ServerName":"大众麻将初级房",
+	"PropIdList":[1]
+}
