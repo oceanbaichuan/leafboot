@@ -22,7 +22,7 @@ type GuessLogic struct {
 	gamelogic.FactoryGameLogic
 }
 
-func (g *GuessLogic) CreateClientPlayer(addr string) base.IPlayerNode {
+func (g *GuessLogic) CreateClientPlayer() base.IPlayerNode {
 	return &GuessPlayerNode{}
 }
 
