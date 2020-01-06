@@ -1,6 +1,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/hudgit2019/leafboot/model"
 	"github.com/hudgit2019/leafboot/msg"
 	"github.com/name5566/leaf/log"
@@ -14,7 +16,7 @@ func SelectGameData(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
 		return
 	}
 	gamedata := model.GameDataRecord{}
-	dbconn.Where("user_id = ? and game_id = ?", datareq.Userid, datareq.Gameid).Find(&gamedata)
+	dbRow := dbconn.Where("user_id = ? and game_id = ?", datareq.Userid, datareq.Gameid).Find(&gamedata)
 	log.Debug("SelectGameData %v", gamedata)
 	account.GameExp = gamedata.GameExp
 	account.GameWinTimes = gamedata.WinTimes
@@ -22,4 +24,19 @@ func SelectGameData(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
 	account.GamePlayTime = gamedata.PlayTime
 	account.GameOnlineTime = gamedata.OnlineTime
 	account.GameCoinPlay = gamedata.PlayCoin
+	if dbRow.RowsAffected > 0 {
+		dbconn.Model(&model.GameDataRecord{UserID: datareq.Userid,
+			GameID: datareq.Gameid}).Update(model.GameDataRecord{
+			LoginIP:   datareq.Loginip,
+			LoginTime: time.Now(),
+		})
+	} else {
+		dbconn.Save(&model.GameDataRecord{
+			UserID:     datareq.Userid,
+			GameID:     datareq.Gameid,
+			LoginIP:    datareq.Loginip,
+			LoginTime:  time.Now(),
+			UpdateTime: time.Now(),
+		})
+	}
 }

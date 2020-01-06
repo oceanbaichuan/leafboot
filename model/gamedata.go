@@ -4,7 +4,7 @@ import "time"
 
 type GameDataRecord struct {
 	UserID        int64 `gorm:"primary_key:true"` //用户ID
-	GameID        int64 `gorm:"primary_key:true"` //用户ID
+	GameID        int32 `gorm:"primary_key:true"` //用户ID
 	HelpTimes     int32
 	HelpCoin      int64
 	RechargeTimes int32 //

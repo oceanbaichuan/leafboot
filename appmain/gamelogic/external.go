@@ -141,10 +141,12 @@ func (f *FactoryGameLogic) OnPlayerClose(player base.IPlayerNode) {
 		}
 		//如果是被代理节点,推送到代理解除路由
 		if playernode.IsProxyedNode() {
-			leaveRsp := msg.LeaveScenceRes{
+			leaveRsp := msg.LeaveSceneRes{
 				Route: conf.RoomInfo.NodeName,
 			}
 			base.SendRspMsg(playernode, leaveRsp)
+			proxyNode := playernode.Netagent.UserData().(*base.ProxyNode)
+			delete(proxyNode.MapClient, playernode.ProxyClientID)
 		}
 	} else {
 		log.Debug("playernode:%v 游戏状态退出 Usergamestatus:%v", playernode.Usernodeinfo.Userid, playernode.Usergamestatus)
@@ -199,25 +201,29 @@ func (f *FactoryGameLogic) SavePlayerGoldBean(player base.IPlayerNode, goldbean 
 //SavePlayerprop 游戏结束调用，用户游戏过程中产生的道具变化更新
 func (f *FactoryGameLogic) SavePlayerProp(player base.IPlayerNode, propinfo msg.UserPropChange, writesource int32) {
 	playernode := player.(*base.ClientNode)
+	_, okid := playernode.Useraccountdbw.Proplist[propinfo.Propid]
+	if !okid {
+		playernode.Useraccountdbw.Proplist[propinfo.Propid] = make(map[int32]msg.UserPropChange)
+	}
 	propidlist, okid := playernode.Useraccountdbw.Proplist[propinfo.Propid]
 	log.Debug("SavePlayerProp userid:%v propinfo:%v writesource:%v", playernode.Usernodeinfo.Userid, propinfo, writesource)
 	if okid {
-		propinfo, oktype := propidlist[propinfo.Proptype]
+		tmpProp, oktype := propidlist[propinfo.Proptype]
 		if oktype {
 			if propinfo.Propnum != 0 {
-				propinfo.Propnum += propinfo.Propnum
-
+				tmpProp.Propnum += propinfo.Propnum
+				playernode.Useraccountdbw.Proplist[propinfo.Propid][propinfo.Proptype] = tmpProp
 			}
 			if propinfo.Proptime != 0 {
-				propinfo.Proptime += propinfo.Proptime
+				tmpProp.Proptime += propinfo.Proptime
+				playernode.Useraccountdbw.Proplist[propinfo.Propid][propinfo.Proptype] = tmpProp
 			}
 		} else {
-			propidlist[propinfo.Proptype] = propinfo
+			playernode.Useraccountdbw.Proplist[propinfo.Propid][propinfo.Proptype] = propinfo
 		}
 	} else {
-		proptypelist := make(map[int32]msg.UserPropChange)
-		proptypelist[propinfo.Proptype] = propinfo
-		playernode.Useraccountdbw.Proplist[propinfo.Propid] = proptypelist
+		// proptypelist := make(map[int32]msg.UserPropChange)
+		playernode.Useraccountdbw.Proplist[propinfo.Propid][propinfo.Proptype] = propinfo
 	}
 	bExists := false
 	for _, curpropinfo := range playernode.Usernodeinfo.Proplist {
@@ -251,25 +257,10 @@ func (f *FactoryGameLogic) SavePlayerProp(player base.IPlayerNode, propinfo msg.
 }
 
 //SavePlayergameend 游戏结束调用，用户游戏过程中产生的金豆变化更新
-func (f *FactoryGameLogic) SavePlayerGameEnd(player base.IPlayerNode, datachanged base.Userplaygamedata, writesource int32) {
+func (f *FactoryGameLogic) SavePlayerGameEnd(player base.IPlayerNode, datachanged base.Userplaygamedata) {
 	playernode := player.(*base.ClientNode)
 	log.Debug("SavePlayerGameEnd userid:%v datachanged:%v", playernode.Usernodeinfo.Userid, datachanged)
-	if datachanged.Gamecoin != 0 {
-		f.WriteAttributionLog(&msg.AttributeChangelog{})
-	}
-	if datachanged.Goldbean != 0 {
-		f.WriteAttributionLog(&msg.AttributeChangelog{})
-	}
-	//逻辑值更新
-	playernode.Usernodeinfo.GameCoin += datachanged.Gamecoin + datachanged.Gametax
-	playernode.Usernodeinfo.GoldBean += datachanged.Goldbean
-	playernode.Usernodeinfo.GameCoinWin += datachanged.Gamecoin
-
-	//增量值更新
-	playernode.Useraccountdbw.Gamecoin += datachanged.Gamecoin + datachanged.Gametax
-	playernode.Useraccountdbw.Goldbean += datachanged.Goldbean
-	playernode.Useraccountdbw.Gamecoinwin += datachanged.Gamecoin
-	if playernode.Useraccountdbw.Gamecoin > 0 {
+	if datachanged.Gamecoin > 0 {
 		playernode.Useraccountdbw.Gamewintimes += 1
 		playernode.Usernodeinfo.GameWinTimes += 1
 	} else {
@@ -320,4 +311,8 @@ func (f *FactoryGameLogic) CallBackLoginAgain(player base.IPlayerNode)          
 func (f *FactoryGameLogic) AutoPlay(player base.IPlayerNode)                              {}
 func (f *FactoryGameLogic) AppMsgCallBackInit(*map[string]base.MsgHandler)                {}
 func (f *FactoryGameLogic) OnDestroy() {
+	//清除所有在线
+	for _, playerint := range base.PlayerList.GetAllPlayers() {
+		f.ClosePlayer(playerint)
+	}
 }

@@ -38,8 +38,8 @@ func (f *FactoryGameLogic) RegisteGameMsgCallback(skeleton *module.Skeleton) {
 	//此处添加游戏框架消息句柄
 	mapReqHandler["SitDown"] = f.handleSitdownReq
 	mapReqHandler["HandUp"] = f.handleHandUpReq
-	mapReqHandler["EnterSence"] = f.handleLoginGameReq
-	mapReqHandler["LeaveSence"] = f.handleLoginOut
+	mapReqHandler["EnterScene"] = f.handleLoginGameReq
+	mapReqHandler["LeaveScene"] = f.handleLoginOut
 	mapReqHandler["LeaveTable"] = f.handleLeaveTableReq
 	//此处添加机器人框架消息句柄
 	f.AppMsgCallBackInit(&mapReqHandler)

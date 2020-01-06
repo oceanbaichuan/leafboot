@@ -15,9 +15,9 @@ const (
 
 type Userplaygamedata struct {
 	Gametax        int64                                  //税收
-	Gamecoin       int64                                  //增量
-	Goldbean       int32                                  //增量
-	Proplist       map[int32]map[int32]msg.UserPropChange //道具列表增量
+	Gamecoin       int64                                  //key:srcid 增量
+	Goldbean       int32                                  //key:srcid增量
+	Proplist       map[int32]map[int32]msg.UserPropChange //key:srcid道具列表增量
 	Gameplaytime   int32                                  //
 	Gameonlinetime int32                                  //
 	Gamewintimes   int32                                  //
@@ -54,4 +54,7 @@ func (playerlist *PlayerNodeList) DeletePlayer(userid int64) {
 }
 func (playerlist *PlayerNodeList) GetOnlineNum() int {
 	return len(playerlist.onlinelist)
+}
+func (playerlist *PlayerNodeList) GetAllPlayers() map[int64]IPlayerNode {
+	return playerlist.onlinelist
 }

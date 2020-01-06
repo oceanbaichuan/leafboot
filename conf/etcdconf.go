@@ -17,11 +17,8 @@ var (
 	NewTCPAgent   func(*network.TCPConn) network.Agent
 	ChanRoomFlag  chan bool
 	bInitialized  bool
-)
-
-const (
-	SelfEtcdDir = "ServerList/"
-	APPEtcdDir  = "APPCfgList/GameList/"
+	SelfEtcdDir   = "ServerList/"
+	APPEtcdDir    = "APPCfgList/GameList/"
 )
 
 func StartEtcd() {
@@ -31,6 +28,7 @@ func StartEtcd() {
 	//加载所需etcd配置
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s/Level_%d/%s",
 		APPEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
+
 	for _, v := range Server.EtcdKey {
 		cfgetcd := client.Config{
 			Endpoints: []string{Server.EtcdAddr},
@@ -40,13 +38,13 @@ func StartEtcd() {
 		}
 		etcdClient, err := client.New(cfgetcd)
 		if err != nil {
-			log.Fatal("err:%v", err)
+			log.Error("err:%v", err)
 		}
 		gameAPI := client.NewKeysAPI(etcdClient)
 		resp, err := gameAPI.Get(context.Background(), v,
 			&client.GetOptions{Recursive: true, Sort: false, Quorum: true})
 		if err != nil {
-			log.Fatal("err:%v", err)
+			log.Error("err:%v", err)
 		}
 		if resp != nil && resp.Node != nil {
 			paraseEtcdNode(resp.Action, resp.Node)
@@ -67,7 +65,7 @@ func writeRoomInfo2Etcd() {
 	}
 	etcdClient, err := client.New(cfgetcd)
 	if err != nil {
-		log.Fatal("err:%v", err)
+		log.Error("err:%v", err)
 	}
 	gameAPI := client.NewKeysAPI(etcdClient)
 	roominfo, _ := json.Marshal(&RoomInfo)
@@ -84,7 +82,7 @@ func registe2Etcd() {
 		}
 		etcdClient, err := client.New(cfgetcd)
 		if err != nil {
-			log.Fatal("err:%v", err)
+			log.Error("err:%v", err)
 		}
 		gameAPI := client.NewKeysAPI(etcdClient)
 		Server2Etcd.value.CurOnlineNum = RoomInfo.CurOnlineNum
@@ -94,7 +92,7 @@ func registe2Etcd() {
 			SelfEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), strValue,
 			&client.SetOptions{TTL: 10 * time.Second})
 		if err != nil {
-			log.Fatal("err:%v", err)
+			log.Error("err:%v", err)
 		}
 		//log.Debug("resp:%v", resp)
 		time.Sleep(9 * time.Second)

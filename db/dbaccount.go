@@ -1,6 +1,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/hudgit2019/leafboot/msg"
 
 	"github.com/hudgit2019/leafboot/model"
@@ -43,6 +45,15 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 	account.Gender = accountInfo.Gender
 	account.ThirdHeadUrl = accountInfo.AccountThirdpartInfo.HeadUrl //第三方头像地址
 	account.Phonebinded = accountInfo.AccountSecurityInfo.PhoneNum  //绑定手机号
+	dbconn.Save(&model.AccountLastloginInfo{
+		UserID:          datareq.Userid,
+		LastLoginIP:     datareq.Loginip,
+		LastLoginMacid:  datareq.MacID,
+		LastLoginAppid:  datareq.AppID,
+		LastLoginChanid: datareq.ChannelID,
+		LastLoginDevid:  datareq.DevType,
+		LoginTime:       time.Now(),
+	})
 	log.Debug("%v", accountInfo)
 	//tx.Commit()
 	return nil

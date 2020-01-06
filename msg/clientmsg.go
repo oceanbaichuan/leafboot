@@ -12,11 +12,11 @@ type EnterScenceReq struct {
 	LoginIP string //登录IP
 }
 
-//LeaveScenceReq 进入业务服
-type LeaveScenceReq struct {
+//LeaveSceneReq 进入业务服
+type LeaveSceneReq struct {
 	UserID int64 //用户ID
 }
-type LeaveScenceRes struct {
+type LeaveSceneRes struct {
 	Route string //用户ID
 }
 
@@ -51,6 +51,8 @@ type LoginRes struct {
 	Account        string    //用户账号
 	AcIndex        int32     //用户账号所属机器码的序号
 	AcType         int16     //账号类型
+	AppID          string    //对外产品ID
+	SiteID         int32     //对内产品ID
 	Freezed        int8      //账号是否冻结
 	NickName       string    //用户昵称
 	GameCoin       int64     //积分

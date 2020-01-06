@@ -83,7 +83,7 @@ type IGameLogic interface {
 	SavePlayerGameCoin(player IPlayerNode, gamecoin int64, writesource int32)
 	SavePlayerGoldBean(player IPlayerNode, goldbean int32, writesource int32)
 	SavePlayerProp(player IPlayerNode, propinfo msg.UserPropChange, writesource int32)
-	SavePlayerGameEnd(player IPlayerNode, datachanged Userplaygamedata, writesource int32)
+	SavePlayerGameEnd(player IPlayerNode, datachanged Userplaygamedata)
 	SaveTableGameEnd(table ITable)
 	WriteLoginRoomLog(loginlog interface{})
 	WriteLeaveRoomLog(leavelog interface{})

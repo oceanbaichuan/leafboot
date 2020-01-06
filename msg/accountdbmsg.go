@@ -56,23 +56,28 @@ type Useronlinestatus struct {
 	Collectdate time.Time //
 }
 type Accountrdatareq struct {
-	Userid   int64   //
-	Gameid   int32   //
-	Serverid string  //
-	Loginip  string  //
-	Proplist []int32 //道具列表
+	Userid      int64   //
+	Gameid      int32   //
+	Serverid    string  //
+	ServerLevel int32   //
+	Loginip     string  //
+	MacID       string  //
+	ChannelID   int32   //
+	AppID       string  //
+	DevType     int8    //
+	Proplist    []int32 //道具列表
 }
 type Accountwdatareq struct {
-	Userid         int64            //
-	Gameid         int32            //
-	Gamecoin       int64            //增量
-	Goldbean       int32            //增量
-	Proplist       []UserPropChange //道具列表增量
-	Gametax        int64
-	Gameplaytime   int32 //
-	Gameonlinetime int64 //
-	Gamewintimes   int32 //
-	Gamelosetimes  int32 //
-	Gamecoinwin    int64 //
-	Gamecoinlose   int64 //
+	UserID         int64            //
+	GameID         int32            //
+	GameCoin       int64            //增量
+	PrizeTicket    int32            //增量
+	PropList       []UserPropChange //道具列表增量
+	GameTax        int64
+	GamePlaytime   int32 //
+	GameOnlinetime int64 //
+	GameWintimes   int32 //
+	GameLosetimes  int32 //
+	GameCoinwin    int64 //
+	GameCoinlose   int64 //
 }

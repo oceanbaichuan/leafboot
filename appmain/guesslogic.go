@@ -72,8 +72,10 @@ func (g *GuessLogic) handleGuessReq(args []interface{}) {
 	if overguesscount == table.ReadyPlayers {
 		gussresult := GuessResult{}
 		for i, v := range table.TablePlayers {
-			//g.SavePlayerGameCoin(v, 100, 113),just sample,you should fill your own data to struct!
-			g.SavePlayerGameEnd(v, base.Userplaygamedata{}, 112)
+			g.SavePlayerGameCoin(v, 100, 113) //just sample,you should fill your own data to struct!
+			g.SavePlayerGoldBean(v, 100, 113) //just sample,you should fill your own data to struct!
+			g.SavePlayerProp(v, msg.UserPropChange{}, 113)
+			g.SavePlayerGameEnd(v, base.Userplaygamedata{})
 			g.WriteTableRoundLog(&msg.Playgamelog{})
 			gussresult.Guesstype[i] = v.(*GuessPlayerNode).Guesstype
 			gussresult.Socres[i] = 1000

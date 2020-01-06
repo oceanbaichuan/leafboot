@@ -41,6 +41,7 @@ func (f *FactoryGameLogic) handleLoginGameReq(args []interface{}) {
 			newplayer.ProxyClientID = clientReq.ReqID
 			newplayer.Netagent = a
 			tmpplayer = newplayer
+			proxyNode.MapClient[clientReq.ReqID] = newplayer
 		} else {
 			tmpplayer = proxyplayer
 		}
@@ -74,11 +75,14 @@ func (f *FactoryGameLogic) handleLoginGameReq(args []interface{}) {
 	// a.Close()
 	dbloginres := msg.LoginRes{}
 	dbloginreq := msg.Accountrdatareq{
-		Userid:   req.UserID,
-		Gameid:   conf.RoomInfo.GameID,
-		Serverid: conf.RoomInfo.NodeID,
-		Loginip:  req.LoginIP,
-		Proplist: conf.RoomInfo.PropIdList,
+		Userid:      req.UserID,
+		Gameid:      conf.RoomInfo.GameID,
+		Serverid:    conf.RoomInfo.NodeID,
+		Loginip:     strings.Split(req.LoginIP, ":")[0],
+		AppID:       req.AppID,
+		MacID:       req.MacID,
+		ServerLevel: conf.RoomInfo.RoomLevel,
+		Proplist:    conf.RoomInfo.PropIdList,
 	}
 	err = db.SelectAccount(&dbloginreq, &dbloginres)
 	log.Debug("SelectAccount err:%v", err)
@@ -543,24 +547,40 @@ func (f *FactoryGameLogic) OnTableLeave(player *base.ClientNode) {
 	f.CallBackLeaveTable(player, gametable)
 }
 func (f *FactoryGameLogic) handleLoginOut(args []interface{}) {
+	a := args[1].(gate.Agent)
+	clientReq := args[0].(*msg.RequestData)
+	playerInt := a.UserData().(base.IPlayerNode)
+	var player *base.ClientNode = nil
+	if playerInt.IsProxyNode() {
+		proxyNode := playerInt.(*base.ProxyNode)
+		proxyplayer, ok := proxyNode.MapClient[clientReq.ReqID]
+		if !ok {
+			return
+		} else {
+			player = proxyplayer
+		}
+	} else {
+		player = playerInt.(*base.ClientNode)
+	}
+	f.OnPlayerClose(player)
 }
 func (f *FactoryGameLogic) handleloginout(player base.IPlayerNode) {
 	playernode := player.(*base.ClientNode)
 	logout := msg.Accountwdatareq{
-		Userid:         playernode.Usernodeinfo.Userid,
-		Gameid:         conf.RoomInfo.GameID,
-		Gamecoin:       playernode.Useraccountdbw.Gamecoin,
-		Goldbean:       playernode.Useraccountdbw.Goldbean,
-		Gametax:        playernode.Useraccountdbw.Gametax,
-		Gameplaytime:   playernode.Useraccountdbw.Gameplaytime,
-		Gameonlinetime: time.Now().Unix() - playernode.Userlogintime.Unix(),
-		Gamewintimes:   playernode.Useraccountdbw.Gamewintimes,
-		Gamelosetimes:  playernode.Useraccountdbw.Gamelosetimes,
-		Gamecoinwin:    playernode.Useraccountdbw.Gamecoinwin,
+		UserID:         playernode.Usernodeinfo.Userid,
+		GameID:         conf.RoomInfo.GameID,
+		GameCoin:       playernode.Useraccountdbw.Gamecoin,
+		PrizeTicket:    playernode.Useraccountdbw.Goldbean,
+		GameTax:        playernode.Useraccountdbw.Gametax,
+		GamePlaytime:   playernode.Useraccountdbw.Gameplaytime,
+		GameOnlinetime: time.Now().Unix() - playernode.Userlogintime.Unix(),
+		GameWintimes:   playernode.Useraccountdbw.Gamewintimes,
+		GameLosetimes:  playernode.Useraccountdbw.Gamelosetimes,
+		GameCoinwin:    playernode.Useraccountdbw.Gamecoinwin,
 	}
 	for _, propidlist := range playernode.Useraccountdbw.Proplist {
 		for _, prop := range propidlist {
-			logout.Proplist = append(logout.Proplist, prop)
+			logout.PropList = append(logout.PropList, prop)
 		}
 	}
 	db.SaveUserProperty(&logout)                                 //更新积分等属性

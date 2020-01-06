@@ -1,6 +1,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/hudgit2019/leafboot/model"
 	"github.com/hudgit2019/leafboot/msg"
 	"github.com/name5566/leaf/log"
@@ -37,6 +39,18 @@ func SelectUserInfo(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
 		}
 		account.Proplist = append(account.Proplist, prop)
 	}
+	//非断线重连，插入在线标记
+	if userdata.GameUserOnline.GameID == 0 {
+		dbconn.Save(&model.GameUserOnline{
+			UserID:      datareq.Userid,
+			GameID:      datareq.Gameid,
+			ServerID:    datareq.Serverid,
+			AppID:       account.AppID,
+			SiteID:      account.SiteID,
+			ServerLevel: datareq.ServerLevel,
+			CreateTime:  time.Now(),
+		})
+	}
 	log.Debug("SelectUserInfo %v", userdata)
 }
 func DeleteOnline(userid int64) {
@@ -49,6 +63,6 @@ func DeleteOnline(userid int64) {
 	dbconn.Delete(&model.GameUserOnline{UserID: userid})
 }
 func SaveUserProperty(data *msg.Accountwdatareq) error {
-
+	//更新每日
 	return nil
 }
