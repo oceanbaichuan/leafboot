@@ -37,10 +37,10 @@ func (f *FactoryGameLogic) keepAlive() {
 }
 
 //updateFlag 更新房间状态到连接层
-func (f *FactoryGameLogic) updateFlag(chanFlag chan bool) {
+func (f *FactoryGameLogic) listenEtcdConf() {
 	for {
 		select {
-		case roomFlag := <-chanFlag:
+		case roomFlag := <-conf.ChanRoomFlag:
 			{
 				for _, v := range mapConnServer {
 					//注册本节点到connector
@@ -54,7 +54,12 @@ func (f *FactoryGameLogic) updateFlag(chanFlag chan bool) {
 					base.SendReqMsg(v, &flagNotice)
 				}
 			}
+		case etcdconf := <-conf.ChanChildConf:
+			{
+				f.CallBackEtcdConf(etcdconf.Action, etcdconf.Key, etcdconf.Value)
+			}
 		}
+
 	}
 }
 func (f *FactoryGameLogic) Start(netgate *gate.Gate) error {
@@ -65,7 +70,7 @@ func (f *FactoryGameLogic) Start(netgate *gate.Gate) error {
 	db.StartDB()
 	myredis.StartRedis()
 	go f.keepAlive()
-	go f.updateFlag(conf.ChanRoomFlag)
+	go f.listenEtcdConf()
 	return nil
 }
 func (f *FactoryGameLogic) CreateRoom() error {
@@ -346,6 +351,7 @@ func (f *FactoryGameLogic) CallBackGameStart(table base.ITable)                 
 func (f *FactoryGameLogic) CallBackLoginAgain(player base.IPlayerNode)                    {}
 func (f *FactoryGameLogic) AutoPlay(player base.IPlayerNode)                              {}
 func (f *FactoryGameLogic) AppMsgCallBackInit(*map[string]base.MsgHandler)                {}
+func (f *FactoryGameLogic) CallBackEtcdConf(action string, key string, value string)      {}
 func (f *FactoryGameLogic) OnDestroy() {
 	//清除所有在线
 	for _, playerint := range base.PlayerList.GetAllPlayers() {

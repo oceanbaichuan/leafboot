@@ -18,6 +18,7 @@ var (
 	ChanRoomFlag  chan bool
 	ChanDataBase  chan DatabaseInfo
 	ChanRedisInfo chan RedisInfo
+	ChanChildConf chan EtcdChildConfig
 	bInitialized  bool
 	SelfEtcdDir   = "ServerList/"
 	APPEtcdDir    = "APPCfgList/GameList/"
@@ -29,11 +30,18 @@ const (
 	RedisEtcdDir = "RedisConf/"
 )
 
+type EtcdChildConfig struct {
+	Action string
+	Key    string
+	Value  string
+}
+
 func StartEtcd() {
 	MapConnServer = make(map[string]ProxyNodeInfo)
 	ChanRoomFlag = make(chan bool, 1)
 	ChanDataBase = make(chan DatabaseInfo, 100)
 	ChanRedisInfo = make(chan RedisInfo, 100)
+	ChanChildConf = make(chan EtcdChildConfig, 1000)
 	writeRoomInfo2Etcd()
 	//加载所需etcd配置
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
@@ -217,6 +225,13 @@ func jsonConf2Struct(action string, key string, value string) {
 				Server.RedisList = append(Server.RedisList, dbinfo)
 			}
 		}
+	} else {
+		childConf := EtcdChildConfig{
+			Action: action,
+			Key:    key,
+			Value:  value,
+		}
+		ChanChildConf <- childConf
 	}
 }
 func watchGateServer(serverName string) {
