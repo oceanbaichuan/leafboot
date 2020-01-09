@@ -12,17 +12,15 @@ import (
 	"github.com/hudgit2019/leafboot/msg"
 
 	"github.com/goinggo/mapstructure"
-	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/log"
 )
 
 func (f *FactoryGameLogic) handleLoginGameReq(args []interface{}) {
 	clientReq := args[0].(*msg.RequestData)
 	// 消息的发送者
-	a := args[1].(gate.Agent)
+	playerInt := args[1].(base.IPlayerNode)
 	req := msg.EnterScenceReq{}
 	err := mapstructure.Decode(clientReq.ReqData, &req)
-	playerInt := a.UserData().(base.IPlayerNode)
 	if err != nil {
 		base.SendFailMsgWithID(playerInt, clientReq.ReqID, 405,
 			fmt.Sprintf("invalid param for method:%s", clientReq.Route), nil)
@@ -39,7 +37,7 @@ func (f *FactoryGameLogic) handleLoginGameReq(args []interface{}) {
 			newplayer := f.OnCreatePlayer("").(*base.ClientNode)
 			newplayer.Initialize()
 			newplayer.ProxyClientID = clientReq.ReqID
-			newplayer.Netagent = a
+			newplayer.Netagent = proxyNode.Netagent
 			tmpplayer = newplayer
 			proxyNode.MapClient[clientReq.ReqID] = newplayer
 		} else {
@@ -75,6 +73,9 @@ func (f *FactoryGameLogic) handleLoginGameReq(args []interface{}) {
 	// a.Close()
 	dbloginres := msg.LoginRes{}
 	dbloginreq := msg.Accountrdatareq{
+		Account:     req.Account,
+		Passwd:      req.Passwd,
+		Token:       req.Token,
 		Userid:      req.UserID,
 		Gameid:      conf.RoomInfo.GameID,
 		Serverid:    conf.RoomInfo.NodeID,
@@ -85,20 +86,43 @@ func (f *FactoryGameLogic) handleLoginGameReq(args []interface{}) {
 		Proplist:    conf.RoomInfo.PropIdList,
 	}
 	err = db.SelectAccount(&dbloginreq, &dbloginres)
-	log.Debug("SelectAccount err:%v", err)
-	db.SelectUserInfo(&dbloginreq, &dbloginres)
-	log.Debug("SelectUserInfo err:%v", err)
-	db.SelectGameData(&dbloginreq, &dbloginres)
-	log.Debug("SelectGameData err:%v", err)
-	//db.SelectAccount(req.Userid, ServerInfo.GameID,ServerInfo.RoomID ServerInfo.PropIdList, &dblogin)
+	if err == nil {
+		log.Debug("SelectAccount err:%v", err)
+		db.SelectUserInfo(&dbloginreq, &dbloginres)
+		log.Debug("SelectUserInfo err:%v", err)
+		db.SelectGameData(&dbloginreq, &dbloginres)
+		log.Debug("SelectGameData err:%v", err)
+	}
 	//登录成功后，添加节点
 	f.handleLoginRes([]interface{}{&dbloginres, succplayer})
 }
 func (f *FactoryGameLogic) handleLoginAgain(player base.IPlayerNode) {
-
-	loginagainres := msg.Loginagainres{}
 	succplayer := player.(*base.ClientNode)
-	loginagainres.Selfbaseinfo = succplayer.Usernodeinfo
+	loginagainres := msg.LoginAgainRes{
+		UserID:     succplayer.Usernodeinfo.Userid,
+		ErrCode:    succplayer.Usernodeinfo.Errcode,
+		Account:    succplayer.Usernodeinfo.Account,
+		Token:      succplayer.Usernodeinfo.Token,
+		AcIndex:    succplayer.Usernodeinfo.AcIndex,
+		AcType:     succplayer.Usernodeinfo.AcType,
+		AppID:      succplayer.Usernodeinfo.AppID,
+		IsValid:    succplayer.Usernodeinfo.IsValid,
+		SID:        succplayer.Usernodeinfo.SiteID,
+		NickName:   succplayer.Usernodeinfo.NickName,
+		GameCoin:   succplayer.Usernodeinfo.GameCoin,
+		PTicket:    succplayer.Usernodeinfo.GoldBean,
+		AllPTicket: succplayer.Usernodeinfo.AllGoldBean,
+		RegChan:    succplayer.Usernodeinfo.RegChan,
+		RegTime:    succplayer.Usernodeinfo.RegTime,
+		RegSID:     succplayer.Usernodeinfo.RegSiteID,
+		Gender:     succplayer.Usernodeinfo.Gender,
+		HeadID:     succplayer.Usernodeinfo.HeadID,
+		THUrl:      succplayer.Usernodeinfo.ThirdHeadUrl,
+		PhNum:      succplayer.Usernodeinfo.Phonebinded,
+		GameID:     succplayer.Usernodeinfo.OtherGameID,
+		ServerID:   succplayer.Usernodeinfo.OtherRoomID,
+		PropList:   succplayer.Usernodeinfo.Proplist,
+	}
 	//入座状态
 	if succplayer.Usergamestatus >= base.PlayerstatuHaveSitDown {
 		gametable := f.GameTables[succplayer.Usertableid].(*base.GameTable)
@@ -130,18 +154,43 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 	succplayer := args[1].(*base.ClientNode)
 	dbloginres := args[0].(*msg.LoginRes)
 	succplayer.Usernodeinfo = *dbloginres
-	succplayer.Usergamestatus = base.PlayerstatuWaitSitDown
-	if dbloginres.Freezed == 0 {
-		dbloginres.Errcode = msg.LoginErr_accountforbidden
-		base.SendRspMsg(succplayer, *dbloginres)
+	clientLoginRsp := msg.ClientUserRes{
+		UserID:     dbloginres.Userid,
+		ErrCode:    dbloginres.Errcode,
+		Account:    dbloginres.Account,
+		Token:      dbloginres.Token,
+		AcIndex:    dbloginres.AcIndex,
+		AcType:     dbloginres.AcType,
+		AppID:      dbloginres.AppID,
+		IsValid:    dbloginres.IsValid,
+		SID:        dbloginres.SiteID,
+		NickName:   dbloginres.NickName,
+		GameCoin:   dbloginres.GameCoin,
+		PTicket:    dbloginres.GoldBean,
+		AllPTicket: dbloginres.AllGoldBean,
+		RegChan:    dbloginres.RegChan,
+		RegTime:    dbloginres.RegTime,
+		RegSID:     dbloginres.RegSiteID,
+		Gender:     dbloginres.Gender,
+		HeadID:     dbloginres.HeadID,
+		THUrl:      dbloginres.ThirdHeadUrl,
+		PhNum:      dbloginres.Phonebinded,
+		GameID:     dbloginres.OtherGameID,
+		ServerID:   dbloginres.OtherRoomID,
+		PropList:   dbloginres.Proplist,
+	}
+	if dbloginres.IsValid == 0 {
+		clientLoginRsp.ErrCode = msg.LoginErr_accountforbidden
+		base.SendRspMsg(succplayer, clientLoginRsp)
+		log.Error("userid:%v IsInValid", dbloginres.Userid)
 		f.ClosePlayer(succplayer)
 		return
 	} else if dbloginres.OtherGameID > 0 && (dbloginres.OtherGameID != conf.RoomInfo.GameID ||
 		dbloginres.OtherRoomID != conf.RoomInfo.NodeID) {
-		log.Error("%v in other room %v %v", dbloginres.Userid, dbloginres.OtherGameID, dbloginres.OtherRoomID)
+		log.Error("userid:%v in other room %v %v", dbloginres.Userid, dbloginres.OtherGameID, dbloginres.OtherRoomID)
 		//告诉用户登录失败
-		dbloginres.Errcode = msg.LoginErr_inotherroom
-		base.SendRspMsg(succplayer, *dbloginres)
+		clientLoginRsp.ErrCode = msg.LoginErr_inotherroom
+		base.SendRspMsg(succplayer, clientLoginRsp)
 		f.ClosePlayer(succplayer)
 		return
 	} else if dbloginres.OtherGameID > 0 &&
@@ -189,13 +238,15 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 			}
 		}
 	} else if conf.RoomInfo.RoomCoinDownLimit != 0 && dbloginres.GameCoin < conf.RoomInfo.RoomCoinDownLimit {
-		dbloginres.Errcode = msg.LoginErr_gamecoin_notenough
-		base.SendRspMsg(succplayer, *dbloginres)
+		clientLoginRsp.ErrCode = msg.LoginErr_gamecoin_notenough
+		base.SendRspMsg(succplayer, clientLoginRsp)
+		log.Error("userid:%v money:%v not enough.limit:%v", dbloginres.Userid, dbloginres.GameCoin, conf.RoomInfo.RoomCoinDownLimit)
 		f.ClosePlayer(succplayer)
 		return
 	} else if conf.RoomInfo.RoomCoinUpLimit != 0 && dbloginres.GameCoin > conf.RoomInfo.RoomCoinUpLimit {
-		dbloginres.Errcode = msg.LoginErr_gamecoin_toomuch
-		base.SendRspMsg(succplayer, *dbloginres)
+		clientLoginRsp.ErrCode = msg.LoginErr_gamecoin_toomuch
+		base.SendRspMsg(succplayer, clientLoginRsp)
+		log.Error("userid:%v money:%v too much.limit:%v", dbloginres.Userid, dbloginres.GameCoin, conf.RoomInfo.RoomCoinUpLimit)
 		f.ClosePlayer(succplayer)
 		return
 	}
@@ -204,6 +255,7 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 	//记录登录完成时间点
 	succplayer.Userlastopertime = time.Now()
 	succplayer.Userlogintime = time.Now()
+	succplayer.Usergamestatus = base.PlayerstatuWaitSitDown
 	f.CallLoginSuccess(succplayer)
 	f.SendRoomInfo(succplayer)
 	f.WriteLoginRoomLog(&msg.Logingamelog{})
@@ -212,18 +264,17 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 func (f *FactoryGameLogic) handleSitdownReq(args []interface{}) {
 	clientReq := args[0].(*msg.RequestData)
 	// 消息的发送者
-	a := args[1].(gate.Agent)
-	req := msg.Sitdownres{}
+	playerInt := args[1].(base.IPlayerNode)
+	req := msg.SitDownRes{}
 	mapstructure.Decode(clientReq.ReqData, &req)
 	log.Debug("sitdown %v", req)
 	routeParam := strings.Split(clientReq.Route, ".")
-	playerInt := a.UserData().(base.IPlayerNode)
 	var tmpplayer *base.ClientNode = nil
 	if playerInt.IsProxyNode() {
 		proxyNode := playerInt.(*base.ProxyNode)
 		proxyplayer, ok := proxyNode.MapClient[clientReq.ReqID]
 		if !ok {
-			sitres := msg.Sitdownres{}
+			sitres := msg.SitDownRes{}
 			sitres.Errcode = msg.SitErr_NoLogin
 			base.SendRspMsgWithID(proxyNode, clientReq.ReqID, sitres)
 			return
@@ -238,7 +289,7 @@ func (f *FactoryGameLogic) handleSitdownReq(args []interface{}) {
 		return
 	}
 	player := tmpplayer
-	sitres := msg.Sitdownres{}
+	sitres := msg.SitDownRes{}
 	log.Debug("handleSitdownReq playerstatu:%v req:%v", player.Usergamestatus, req)
 	if player.Usergamestatus != base.PlayerstatuWaitSitDown {
 		sitres.Errcode = msg.SitErr_NoLogin
@@ -254,7 +305,7 @@ func (f *FactoryGameLogic) handleSitdownReq(args []interface{}) {
 }
 func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, tableid int32, chairid int32) {
 	var fittable base.ITable
-	sitres := msg.Sitdownres{}
+	sitres := msg.SitDownRes{}
 	if tableid > 0 && tableid <= conf.RoomInfo.MaxTableNum {
 		gametable, rettableid, retchairid, err := f.FixSearchTable(player, tableid, chairid)
 		sitres.Tableid = rettableid
@@ -397,11 +448,10 @@ func (f *FactoryGameLogic) FixSearchTable(playernode *base.ClientNode, tableid i
 func (f *FactoryGameLogic) handleHandUpReq(args []interface{}) {
 	clientReq := args[0].(*msg.RequestData)
 	// 消息的发送者
-	a := args[1].(gate.Agent)
-	handres := msg.Handupres{}
+	playerInt := args[1].(base.IPlayerNode)
+	handres := msg.HandUpRes{}
 	//mapstructure.Decode(clientReq.ReqData, &req)
 	routeParam := strings.Split(clientReq.Route, ".")
-	playerInt := a.UserData().(base.IPlayerNode)
 	var player *base.ClientNode = nil
 	if playerInt.IsProxyNode() {
 		proxyNode := playerInt.(*base.ProxyNode)
@@ -450,7 +500,7 @@ func (f *FactoryGameLogic) handleHandUpReq(args []interface{}) {
 	}
 	player.KillTimer(base.Playertimer_checkhandup)
 	base.SendRspMsg(player, handres)
-	handnotice := msg.Handupnotice{}
+	handnotice := msg.HandUpNotice{}
 	handnotice.Tableid = player.Usertableid
 	handnotice.Chairid = player.Userchairid
 	gametableint, _ := f.GetTable(player.Usertableid)
@@ -471,13 +521,12 @@ func (f *FactoryGameLogic) handleHandUpReq(args []interface{}) {
 	}
 }
 func (f *FactoryGameLogic) handleLeaveTableReq(args []interface{}) {
-	a := args[1].(gate.Agent)
+	playerInt := args[1].(base.IPlayerNode)
 	clientReq := args[0].(*msg.RequestData)
-	leaveres := msg.Tableplayerleaveres{}
-	req := msg.Tableplayerleavereq{}
+	leaveres := msg.TablePlayerLeaveRes{}
+	req := msg.TablePlayerLeaveReq{}
 	mapstructure.Decode(clientReq.ReqData, &req)
 	routeParam := strings.Split(clientReq.Route, ".")
-	playerInt := a.UserData().(base.IPlayerNode)
 	var player *base.ClientNode = nil
 	if playerInt.IsProxyNode() {
 		proxyNode := playerInt.(*base.ProxyNode)
@@ -498,7 +547,7 @@ func (f *FactoryGameLogic) handleLeaveTableReq(args []interface{}) {
 		return
 	}
 	if player.Usergamestatus < base.PlayerstatuHaveSitDown || player.Usergamestatus > base.PlayerstatuHandUp {
-		leaveres := msg.Tableplayerleaveres{}
+		leaveres := msg.TablePlayerLeaveRes{}
 		leaveres.Leavetype = req.Leavetype
 		leaveres.Errcode = 1
 		base.SendRspMsg(player, leaveres)
@@ -521,7 +570,7 @@ func (f *FactoryGameLogic) OnTableLeave(player *base.ClientNode) {
 	if player.Usergamestatus == base.PlayerstatuHandUp {
 		gametable.ReadyPlayers--
 	}
-	leavenotice := msg.Tableplayerleavenotice{}
+	leavenotice := msg.TablePlayerLeaveNotice{}
 	leavenotice.Userid = player.Usernodeinfo.Userid
 	leavenotice.Tableid = player.Usertableid
 	leavenotice.Chairid = player.Userchairid
@@ -530,7 +579,7 @@ func (f *FactoryGameLogic) OnTableLeave(player *base.ClientNode) {
 			base.SendRspMsg(playerint, leavenotice)
 		}
 	}
-	leaveres := msg.Tableplayerleaveres{}
+	leaveres := msg.TablePlayerLeaveRes{}
 	leaveres.Leavetype = 1
 	leaveres.Errcode = 0
 	player.Userchairid = -1
@@ -547,9 +596,8 @@ func (f *FactoryGameLogic) OnTableLeave(player *base.ClientNode) {
 	f.CallBackLeaveTable(player, gametable)
 }
 func (f *FactoryGameLogic) handleLoginOut(args []interface{}) {
-	a := args[1].(gate.Agent)
+	playerInt := args[1].(base.IPlayerNode)
 	clientReq := args[0].(*msg.RequestData)
-	playerInt := a.UserData().(base.IPlayerNode)
 	var player *base.ClientNode = nil
 	if playerInt.IsProxyNode() {
 		proxyNode := playerInt.(*base.ProxyNode)
@@ -573,7 +621,7 @@ func (f *FactoryGameLogic) handleloginout(player base.IPlayerNode) {
 		PrizeTicket:    playernode.Useraccountdbw.Goldbean,
 		GameTax:        playernode.Useraccountdbw.Gametax,
 		GamePlaytime:   playernode.Useraccountdbw.Gameplaytime,
-		GameOnlinetime: time.Now().Unix() - playernode.Userlogintime.Unix(),
+		GameOnlinetime: int32(time.Now().Unix() - playernode.Userlogintime.Unix()),
 		GameWintimes:   playernode.Useraccountdbw.Gamewintimes,
 		GameLosetimes:  playernode.Useraccountdbw.Gamelosetimes,
 		GameCoinwin:    playernode.Useraccountdbw.Gamecoinwin,
@@ -583,7 +631,11 @@ func (f *FactoryGameLogic) handleloginout(player base.IPlayerNode) {
 			logout.PropList = append(logout.PropList, prop)
 		}
 	}
-	db.SaveUserProperty(&logout)                                 //更新积分等属性
+	//只有成功验证后，才可以更新在线数据
+	if playernode.Usergamestatus > base.PlayerstatuWaitAuthen {
+		db.SaveUserProperty(logout) //更新积分等属性
+		db.SaveGameData(logout)
+	}
 	db.DeleteOnline(playernode.Usernodeinfo.Userid)              //清除在线
 	base.PlayerList.DeletePlayer(playernode.Usernodeinfo.Userid) //删除内存管理节点
 }

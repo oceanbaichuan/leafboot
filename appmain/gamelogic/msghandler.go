@@ -51,12 +51,12 @@ func (f *FactoryGameLogic) handleRequestMsg(args []interface{}) {
 	req := args[0].(*msg.RequestData)
 	// log.Debug("handleAdverprizereq req:%v", req)
 	// // 消息的发送者
-	a := args[1].(gate.Agent)
+	playerinf := args[1].(gate.Agent).UserData().(base.IPlayerNode)
 	routeParam := strings.Split(req.Route, ".")
 	if fn, ok := mapReqHandler[routeParam[len(routeParam)-1]]; ok {
+		args[1] = playerinf
 		fn(args)
 	} else {
-		playerinf := a.UserData().(base.IPlayerNode)
 		base.SendFailMsgWithID(playerinf, req.ReqID, 404, fmt.Sprintf("method:%s undefined", req.Route), nil)
 		log.Error("method:%s undefined", req.Route)
 	}
@@ -66,5 +66,16 @@ func (f *FactoryGameLogic) handleResponseMsg(args []interface{}) {
 
 }
 func (f *FactoryGameLogic) handleRobotMsg(args []interface{}) {
-
+	req := args[0].(*msg.RobotMessage)
+	routeParam := strings.Split(req.Route, ".")
+	if player, ok := base.PlayerList.GetPlayer(req.UserID); ok {
+		args = append(args, player)
+	} else {
+		log.Error("robotID:%v not created. method:%s", req.UserID, req.Route)
+	}
+	if fn, ok := mapReqHandler[routeParam[len(routeParam)-1]]; ok {
+		fn(args)
+	} else {
+		log.Error("robotID:%v method:%s undefined", req.UserID, req.Route)
+	}
 }

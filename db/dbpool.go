@@ -26,23 +26,61 @@ func init() {
 }
 func StartDB() {
 	for _, v := range conf.Server.DbList {
-		tmpconn, err := OpenDB(v)
-		if err == nil {
-			dbSharding := DBShareding{
-				dbinfo: v,
-				dbconn: tmpconn,
-			}
-			if strings.Contains(v.DataBase, "plat_account_db") {
-				mapDBList["plat_account_db"] = append(mapDBList["plat_account_db"], dbSharding)
-			} else if strings.Contains(v.DataBase, "game_user_db") {
-				mapDBList["game_user_db"] = append(mapDBList["game_user_db"], dbSharding)
-			} else if strings.Contains(v.DataBase, "game_data_db") {
-				mapDBList["game_data_db"] = append(mapDBList["game_data_db"], dbSharding)
-			} else if strings.Contains(v.DataBase, "game_log_db") {
-				mapDBList["game_log_db"] = append(mapDBList["game_log_db"], dbSharding)
-			}
-		} else {
+		err := OpenDBGroup(v)
+		if err != nil {
 			log.Fatal(" StartDB err:%v", err)
+		}
+	}
+	//监听数据库列表
+	go ListenDB()
+
+}
+func OpenDBGroup(dbinfo conf.DatabaseInfo) error {
+	tmpconn, err := OpenDB(dbinfo)
+	if err == nil {
+		dbSharding := DBShareding{
+			dbinfo: dbinfo,
+			dbconn: tmpconn,
+		}
+		if strings.Contains(dbinfo.DataBase, "plat_account_db") {
+			mapDBList["plat_account_db"] = append(mapDBList["plat_account_db"], dbSharding)
+		} else if strings.Contains(dbinfo.DataBase, "game_user_db") {
+			mapDBList["game_user_db"] = append(mapDBList["game_user_db"], dbSharding)
+		} else if strings.Contains(dbinfo.DataBase, "game_data_db") {
+			mapDBList["game_data_db"] = append(mapDBList["game_data_db"], dbSharding)
+		} else if strings.Contains(dbinfo.DataBase, "game_log_db") {
+			mapDBList["game_log_db"] = append(mapDBList["game_log_db"], dbSharding)
+		}
+	} else {
+		return err
+	}
+	return nil
+}
+func ListenDB() {
+	for {
+		select {
+		case dbinfo := <-conf.ChanDataBase:
+			{
+				bHas := false
+				for k, rslist := range mapDBList {
+					for i, v := range rslist {
+						if v.dbinfo.Host == dbinfo.Host &&
+							v.dbinfo.Port == dbinfo.Port &&
+							v.dbinfo.DataBase == dbinfo.DataBase {
+							mapDBList[k][i].dbinfo = dbinfo
+							bHas = true
+							break
+						}
+					}
+					if bHas {
+						break
+					}
+				}
+				if !bHas {
+					OpenDBGroup(dbinfo)
+				}
+
+			}
 		}
 	}
 }

@@ -45,7 +45,7 @@ func (g *GuessLogic) handleGuessReq(args []interface{}) {
 		}
 	}
 	if !bValidtype {
-		kickout := msg.Kickoutres{
+		kickout := msg.KickOutRes{
 			Errcode: msg.Kickout_room_closed + 1,
 			Errmsg:  "invalid guess",
 		}

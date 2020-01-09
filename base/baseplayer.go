@@ -14,7 +14,7 @@ const (
 )
 
 type Userplaygamedata struct {
-	Gametax        int64                                  //税收
+	Gametax        uint64                                 //税收
 	Gamecoin       int64                                  //key:srcid 增量
 	Goldbean       int32                                  //key:srcid增量
 	Proplist       map[int32]map[int32]msg.UserPropChange //key:srcid道具列表增量

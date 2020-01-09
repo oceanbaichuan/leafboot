@@ -1,7 +1,14 @@
 package msg
 
 type RobotMessage struct {
-	Route  string //路由
-	UserID int64  //用户ID
-	Msg    interface{}
+	Route  string
+	UserID int64
+	ReqMsg interface{}
+}
+type ApplyRobotReq struct {
+	UserID   int64
+	NickName string
+	GameCoin int64
+	TableID  int32
+	ChairID  int32
 }

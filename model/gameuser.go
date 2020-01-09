@@ -3,13 +3,13 @@ package model
 import "time"
 
 type GameUserBackpack struct {
-	UserID     int64 `gorm:"primary_key:true"` //用户ID
-	PropID     int32
-	PropType   int32
-	PropCount  int32
-	PropTime   int64
-	UpdateTime time.Time
-	CreateTime time.Time
+	UserID     int64     `gorm:"primary_key:true" json:"user_id"` //用户ID
+	PropID     int32     `json:"prop_id"`
+	PropType   int32     `json:"prop_type"`
+	PropCount  int32     `json:"prop_count"`
+	PropTime   int64     `json:"prop_time"`
+	UpdateTime time.Time `json:"update_time"`
+	CreateTime time.Time `json:"create_time"`
 }
 
 func (a GameUserBackpack) TableName() string {
@@ -17,10 +17,10 @@ func (a GameUserBackpack) TableName() string {
 }
 
 type GameUserCurrency struct {
-	UserID      int64 `gorm:"primary_key:true"` //用户ID
-	GameCoin    int64
-	PrizeTicket int32
-	UpdateTime  time.Time
+	UserID      int64     `gorm:"primary_key:true" json:"user_id"` //用户ID
+	GameCoin    int64     `json:"game_coin"`
+	PrizeTicket int32     `json:"prize_ticket"`
+	UpdateTime  time.Time `json:"update_time"`
 }
 
 func (a GameUserCurrency) TableName() string {
@@ -28,14 +28,13 @@ func (a GameUserCurrency) TableName() string {
 }
 
 type GameUserDaybuysaleRecord struct {
-	UserID       int64 `gorm:"primary_key:true"` //用户ID
-	GameID       int32
-	DaybuyTimes  int32
-	DaybuyCoin   int32
-	DaysaleTimes int32
-	DaysaleCoins int32
-	UpdateTime   time.Time
-	DUpdateTime  time.Time
+	UserID       int64     `gorm:"primary_key:true" json:"user_id"` //用户ID
+	GameID       int32     `json:"game_id"`
+	DaybuyTimes  int32     `json:"daybuy_times"`
+	DaybuyCoin   int32     `json:"daybuy_coin"`
+	DaysaleTimes int32     `json:"daysale_times"`
+	DaysaleCoins int32     `json:"daysale_coins"`
+	UpdateTime   time.Time `json:"update_time"`
 }
 
 func (a GameUserDaybuysaleRecord) TableName() string {
@@ -43,18 +42,17 @@ func (a GameUserDaybuysaleRecord) TableName() string {
 }
 
 type GameUserDayProperty struct {
-	UserID         int64 `gorm:"primary_key:true"` //用户ID
-	OnlineTime     int32
-	PlayTime       int32
-	PlayCoin       int64
-	PlayTax        int64
-	GetPrizeticket int32
-	HelpCoin       uint64
-	HelpTimes      int32
-	RechargeTimes  int32
-	RechargeMoney  int32
-	UpdateTime     time.Time
-	DUpdateTime    time.Time
+	UserID          int64     `gorm:"primary_key:true" json:"user_id"` //用户ID
+	OnlineTime      int32     `json:"online_time"`
+	PlayTime        int32     `json:"play_time"`
+	PlayCoin        int64     `json:"play_coin"`
+	PlayTax         uint64    `json:"play_tax"`
+	PlayPrizeticket int32     `json:"play_prizeticket"`
+	HelpCoin        uint64    `json:"help_coin"`
+	HelpTimes       int32     `json:"help_times"`
+	RechargeTimes   int32     `json:"recharge_times"`
+	RechargeMoney   int32     `json:"recharge_money"`
+	UpdateTime      time.Time `json:"update_time"`
 }
 
 func (a GameUserDayProperty) TableName() string {
@@ -62,13 +60,13 @@ func (a GameUserDayProperty) TableName() string {
 }
 
 type GameUserOnline struct {
-	UserID      int64 `gorm:"primary_key:true"` //用户ID
-	AppID       string
-	SiteID      int32
-	GameID      int32
-	ServerID    string
-	ServerLevel int32
-	CreateTime  time.Time
+	UserID      int64     `gorm:"primary_key:true" json:"user_id"` //用户ID
+	AppID       string    `json:"app_id"`
+	SiteID      int32     `json:"site_id"`
+	GameID      int32     `json:"game_id"`
+	ServerID    string    `json:"server_id"`
+	ServerLevel int32     `json:"server_level"`
+	CreateTime  time.Time `json:"create_time"`
 }
 
 func (a GameUserOnline) TableName() string {
@@ -76,23 +74,17 @@ func (a GameUserOnline) TableName() string {
 }
 
 type GameUserProperty struct {
-	UserID                   int64 `gorm:"primary_key:true"` //用户ID
-	OnlineTime               int32
-	PlayTime                 int32
-	PlayCoin                 int64
-	PlayTax                  int64
-	PlayPrizeticket          int32
-	RechargeTimes            int32
-	RechargeMoney            int32
-	VipExp                   int32
-	GameExp                  int32
-	UpdateTime               time.Time
-	DUpdateTime              time.Time
-	GameUserBackpacks        []GameUserBackpack
-	GameUserCurrency         GameUserCurrency
-	GameUserDaybuysaleRecord GameUserDaybuysaleRecord
-	GameUserDayProperty      GameUserDayProperty
-	GameUserOnline           GameUserOnline
+	UserID          int64     `gorm:"primary_key:true" json:"user_id"` //用户ID
+	OnlineTime      int32     `json:"online_time"`
+	PlayTime        int32     `json:"play_time"`
+	PlayCoin        int64     `json:"play_coin"`
+	PlayTax         uint64    `json:"play_tax"`
+	PlayPrizeticket int32     `json:"play_prizeticket"`
+	RechargeTimes   int32     `json:"recharge_times"`
+	RechargeMoney   int32     `json:"recharge_money"`
+	VipExp          int32     `json:"vip_exp"`
+	GameExp         int32     `json:"game_exp"`
+	UpdateTime      time.Time `json:"update_time"`
 }
 
 func (a GameUserProperty) TableName() string {

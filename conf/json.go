@@ -26,8 +26,11 @@ var Server struct {
 	ConsolePort        int32
 	ProfilePath        string
 	PropIdList         []int32
+	SysClusterName     string //本应用所属系统集群名称
 	//平台库
 	DbList []DatabaseInfo
+	//redis 列表
+	RedisList []RedisInfo
 	//etcd配置
 	EtcdAddr string
 	EtcdKey  []string
@@ -42,6 +45,14 @@ type DatabaseInfo struct {
 	Passwd   string
 	DataBase string
 	DbType   string
+}
+type RedisInfo struct {
+	Addr      string
+	Passwd    string
+	Slot      int32
+	RedisName string
+	MinUID    int64 //分库用户ID起始
+	MaxUID    int64 //分库用户ID截止
 }
 
 //Node2EtcdInfo 写入etcd本身信息
@@ -112,13 +123,16 @@ func init() {
 	if err != nil {
 		log.Fatal("%v", err)
 	}
-
+	if Server.SysClusterName == "" {
+		log.Fatal("SysClusterName must not be empty string!!")
+	}
 	//加载房间配置
 	data, err = ioutil.ReadFile("conf/room.json")
 	if err != nil {
 		log.Fatal("%v", err)
 	}
 	err = json.Unmarshal(data, &RoomInfo)
+	log.Debug("RoomInfo:%v", RoomInfo)
 	if err != nil {
 		log.Fatal("%v", err)
 	}

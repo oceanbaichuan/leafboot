@@ -1,7 +1,10 @@
 package base
 
 import (
+	"crypto/md5"
+	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/hudgit2019/leafboot/msg"
 
@@ -24,9 +27,40 @@ var (
 type MsgHandler func(agrs []interface{})
 type RobotHandler func(userID int64, msg interface{})
 
+//CheckDateDiff srcTime:比较时间 destime:被比较时间  compType：day,month,year cmpValue:差值最大
+func CheckDateDiff(srcTime time.Time, destime time.Time, compType string, cmpValue int) bool {
+	switch compType {
+	case "day":
+		{
+			if srcTime.YearDay()+cmpValue <= destime.YearDay() {
+				return true
+			}
+		}
+	case "month":
+		{
+			if int(srcTime.Month())+cmpValue <= int(destime.Month()) {
+				return true
+			}
+		}
+	case "year":
+		{
+			if srcTime.Year()+cmpValue <= destime.Year() {
+				return true
+			}
+		}
+	}
+	return false
+}
 func init() {
 	PlayerList = new(PlayerNodeList)
 	PlayerList.Init()
+}
+func GernateToken(account string, userID int64) string {
+	hashdig := md5.New()
+	hashdig.Write([]byte(fmt.Sprintf("%s:%v:%v",
+		account, userID, time.Now().Unix())))
+	sercode := fmt.Sprintf("%x", hashdig.Sum(([]byte(""))))
+	return sercode
 }
 
 //GameHandler 消息回调注入信道

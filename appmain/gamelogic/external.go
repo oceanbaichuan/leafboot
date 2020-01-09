@@ -2,14 +2,16 @@ package gamelogic
 
 import (
 	"errors"
+	"fmt"
 	"time"
 	"unsafe"
 
 	"github.com/hudgit2019/leafboot/base"
 	"github.com/hudgit2019/leafboot/conf"
 	"github.com/hudgit2019/leafboot/db"
+	"github.com/hudgit2019/leafboot/model"
 	"github.com/hudgit2019/leafboot/msg"
-
+	myredis "github.com/hudgit2019/leafboot/redis"
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/log"
 )
@@ -21,6 +23,15 @@ type FactoryGameLogic struct {
 
 func (f *FactoryGameLogic) keepAlive() {
 	for {
+		for _, v := range base.PlayerList.GetAllPlayers() {
+			playerNode := v.(*base.ClientNode)
+			//5分钟更新一次token
+			if time.Now().Minute()-playerNode.LastUpateTokenTime.Minute() >= 1 {
+				log.Debug("player:%v updatetoken", playerNode.Usernodeinfo.Userid)
+				db.UpdateATokenTTF(playerNode.Usernodeinfo.Userid)
+				playerNode.LastUpateTokenTime = time.Now()
+			}
+		}
 		time.Sleep(10 * time.Second)
 	}
 }
@@ -52,6 +63,7 @@ func (f *FactoryGameLogic) Start(netgate *gate.Gate) error {
 	f.CreateRoom()
 	conf.StartEtcd()
 	db.StartDB()
+	myredis.StartRedis()
 	go f.keepAlive()
 	go f.updateFlag(conf.ChanRoomFlag)
 	return nil
@@ -134,7 +146,7 @@ func (f *FactoryGameLogic) OnPlayerClose(player base.IPlayerNode) {
 	playernode := player.(*base.ClientNode)
 	if playernode.Usergamestatus < base.PlayerstatuBeginGame {
 		log.Debug("playernode:%v 非游戏状态退出 Usergamestatus:%v", (*iface)(unsafe.Pointer(&playernode.Netagent)), playernode.Usergamestatus)
-		if playernode.Usergamestatus > base.PlayerstatuWaitAuthen {
+		if playernode.Usergamestatus >= base.PlayerstatuWaitAuthen {
 			f.handleloginout(player)
 			f.OnTableLeave(playernode)
 			f.CallBackLogOut(player)
@@ -297,6 +309,30 @@ func (f *FactoryGameLogic) SaveTableGameEnd(table base.ITable) {
 }
 func (f *FactoryGameLogic) HandleAutoGame(player base.IPlayerNode) {
 	f.AutoPlay(player)
+}
+func (f *FactoryGameLogic) applyRobot(robot model.ApplyRobotInfo) (base.IPlayerNode, error) {
+	if player, ok := base.PlayerList.GetPlayer(robot.RobotID); ok {
+		return player, errors.New(fmt.Sprintf("RobotID:%v is already in use", robot.RobotID))
+	}
+	player := f.OnCreatePlayer("").(*base.ClientNode)
+	player.Initialize()
+	player.Userisrobot = true
+	player.Usernodeinfo.Userid = robot.RobotID
+	player.Usernodeinfo.GameCoin = robot.GameCoin
+	player.Usernodeinfo.GoldBean = robot.PrizeTicket
+	player.Usernodeinfo.VipExp = robot.VipExp
+	player.Usernodeinfo.NickName = robot.NickName
+	player.Usernodeinfo.Gender = robot.Gender
+	player.Usergamestatus = base.PlayerstatuWaitSitDown
+	loginRes := msg.ApplyRobotReq{
+		UserID:   robot.RobotID,
+		NickName: robot.NickName,
+		GameCoin: robot.GameCoin,
+		TableID:  robot.TableID,
+		ChairID:  robot.ChairID,
+	}
+	base.SendRspMsg(player, loginRes)
+	return player, nil
 }
 
 func (f *FactoryGameLogic) CallBackSendRoomInfo(player base.IPlayerNode)                  {}

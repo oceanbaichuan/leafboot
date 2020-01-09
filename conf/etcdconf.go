@@ -16,16 +16,28 @@ var (
 	MapConnServer map[string]ProxyNodeInfo
 	NewTCPAgent   func(*network.TCPConn) network.Agent
 	ChanRoomFlag  chan bool
+	ChanDataBase  chan DatabaseInfo
+	ChanRedisInfo chan RedisInfo
 	bInitialized  bool
 	SelfEtcdDir   = "ServerList/"
 	APPEtcdDir    = "APPCfgList/GameList/"
 )
 
+//全平台统一，应用层无需修改
+const (
+	DBEtcdDir    = "DBConf/"
+	RedisEtcdDir = "RedisConf/"
+)
+
 func StartEtcd() {
 	MapConnServer = make(map[string]ProxyNodeInfo)
 	ChanRoomFlag = make(chan bool, 1)
+	ChanDataBase = make(chan DatabaseInfo, 100)
+	ChanRedisInfo = make(chan RedisInfo, 100)
 	writeRoomInfo2Etcd()
 	//加载所需etcd配置
+	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
+	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", RedisEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s/Level_%d/%s",
 		APPEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
 
@@ -41,7 +53,7 @@ func StartEtcd() {
 			log.Error("err:%v", err)
 		}
 		gameAPI := client.NewKeysAPI(etcdClient)
-		resp, err := gameAPI.Get(context.Background(), v,
+		resp, err := gameAPI.Get(context.Background(), Server.SysClusterName+"/"+v,
 			&client.GetOptions{Recursive: true, Sort: false, Quorum: true})
 		if err != nil {
 			log.Error("err:%v", err)
@@ -49,7 +61,7 @@ func StartEtcd() {
 		if resp != nil && resp.Node != nil {
 			paraseEtcdNode(resp.Action, resp.Node)
 		}
-		go watchGateServer(v)
+		go watchGateServer(Server.SysClusterName + "/" + v)
 	}
 	//注册本节点信息到etcd中心
 	go registe2Etcd()
@@ -69,8 +81,8 @@ func writeRoomInfo2Etcd() {
 	}
 	gameAPI := client.NewKeysAPI(etcdClient)
 	roominfo, _ := json.Marshal(&RoomInfo)
-	_, err = gameAPI.Create(context.Background(), fmt.Sprintf("%s%s/Level_%d/%s",
-		APPEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
+	_, err = gameAPI.Create(context.Background(), fmt.Sprintf("%s/%s%s/Level_%d/%s",
+		Server.SysClusterName, APPEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
 }
 func registe2Etcd() {
 	for {
@@ -88,8 +100,8 @@ func registe2Etcd() {
 		Server2Etcd.value.CurOnlineNum = RoomInfo.CurOnlineNum
 		strNode, _ := json.Marshal(&Server2Etcd.value)
 		strValue := string(strNode[:])
-		_, err = gameAPI.Set(context.Background(), fmt.Sprintf("%s%s/Level_%d/%s",
-			SelfEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), strValue,
+		_, err = gameAPI.Set(context.Background(), fmt.Sprintf("%s/%s%s/Level_%d/%s",
+			Server.SysClusterName, SelfEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), strValue,
 			&client.SetOptions{TTL: 10 * time.Second})
 		if err != nil {
 			log.Error("err:%v", err)
@@ -158,6 +170,53 @@ func jsonConf2Struct(action string, key string, value string) {
 			}
 		}
 		bInitialized = true
+	} else if strings.Contains(key, "DBConf/") {
+		dbinfo := DatabaseInfo{}
+		json.Unmarshal([]byte(value), &dbinfo)
+		bHas := false
+		//有则更新
+		for i, v := range Server.DbList {
+			if v.Host == dbinfo.Host &&
+				v.Port == dbinfo.Port &&
+				v.DataBase == dbinfo.DataBase {
+				Server.DbList[i] = dbinfo
+				bHas = true
+				break
+			}
+		}
+		//无则创建,通知db
+		if bInitialized {
+			if !bHas {
+				ChanDataBase <- dbinfo
+			}
+		} else {
+			if !bHas {
+				Server.DbList = append(Server.DbList, dbinfo)
+			}
+		}
+	} else if strings.Contains(key, "RedisConf/") {
+		dbinfo := RedisInfo{}
+		json.Unmarshal([]byte(value), &dbinfo)
+		bHas := false
+		//有则更新
+		for i, v := range Server.RedisList {
+			if v.Addr == dbinfo.Addr &&
+				v.RedisName == dbinfo.RedisName {
+				Server.RedisList[i] = dbinfo
+				bHas = true
+				break
+			}
+		}
+		//无则创建,通知db
+		if bInitialized {
+			if !bHas {
+				ChanRedisInfo <- dbinfo
+			}
+		} else {
+			if !bHas {
+				Server.RedisList = append(Server.RedisList, dbinfo)
+			}
+		}
 	}
 }
 func watchGateServer(serverName string) {

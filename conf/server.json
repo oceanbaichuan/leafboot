@@ -5,6 +5,7 @@
 	"WSAddr": "0.0.0.0:3563",
 	"TCPAddr": "0.0.0.0:3564",
 	"MaxConnNum": 20000,
+	"SysClusterName":"QTTH5_Cluster",
 	"DbList":[{
 		"DbType":"mysql",
 		"Host":"10.7.125.120",
@@ -37,6 +38,30 @@
 		"Passwd":"odao123456",
 		"DataBase":"game_log_db"
 	}],
+	"RedisList":[
+		{
+			"Addr":"10.7.125.121:6379",
+			"Passwd":"ManDao2016DouZi",
+			"Slot":0,
+			"RedisName":"plat_account_db"
+		},
+		{
+			"Addr":"10.7.125.121:6379",
+			"Passwd":"ManDao2016DouZi",
+			"Slot":1,
+			"RedisName":"game_user_db",
+			"MinID":0,
+			"MaxID":0
+		},
+		{
+			"Addr":"10.7.125.121:6379",
+			"Passwd":"ManDao2016DouZi",
+			"Slot":2,
+			"RedisName":"game_data_db",
+			"MinID":0,
+			"MaxID":0
+		}
+	],
 	"EtcdAddr":"http://10.7.125.163:3001",
-	"EtcdKey":["/ServerList/ConnectorServer"]
+	"EtcdKey":["ServerList/ConnectorServer"]
 }

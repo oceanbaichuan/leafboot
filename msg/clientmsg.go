@@ -6,6 +6,7 @@ import "time"
 type EnterScenceReq struct {
 	Account string //账号
 	Passwd  string //密码
+	Token   string //token
 	UserID  int64  //用户ID
 	AppID   string //产品ID
 	MacID   string //机器码
@@ -45,44 +46,31 @@ const (
 // 	Loginfrom         string //登陆来源
 // 	Logintoken        string //登陆token
 // }
-type LoginRes struct {
-	Userid         int64
-	Errcode        int32
-	Account        string    //用户账号
-	AcIndex        int32     //用户账号所属机器码的序号
-	AcType         int16     //账号类型
-	AppID          string    //对外产品ID
-	SiteID         int32     //对内产品ID
-	Freezed        int8      //账号是否冻结
-	NickName       string    //用户昵称
-	GameCoin       int64     //积分
-	BankCoin       int64     //
-	GoldBean       int32     //金豆
-	AllGoldBean    int32     //
-	RegChan        int32     //注册短渠道
-	RegTime        time.Time //注册时间
-	RegSiteID      int32
-	Gender         int8   //性别
-	HeadID         int32  //系统头像id
-	ThirdHeadUrl   string //第三方头像地址
-	Phonebinded    string //绑定手机号
-	VipExp         int32  //
-	GameExp        int32  //
-	GameWinTimes   int32  //
-	GameLoseTimes  int32  //
-	GamePlayTime   int32  //
-	PlatPlayTime   int32  //
-	GameOnlineTime int32  //
-	PlatOnlineTime int32  //
-	GameCoinPlay   int64  //
-	GameCoinWin    int64  //
-	GameCoinLose   int64  //
-	OtherGameID    int32  //
-	OtherRoomID    string //
-	GameStatus     int8
-	Proplist       []PropInfo //道具列表
+type ClientUserRes struct {
+	UserID     int64
+	ErrCode    int32
+	Account    string //用户账号
+	Token      string
+	AcIndex    int32     //用户账号所属机器码的序号
+	AcType     int16     //账号类型
+	AppID      string    //对外产品ID
+	SID        int32     //对内产品ID
+	IsValid    int8      //账号是否冻结
+	NickName   string    //用户昵称
+	GameCoin   int64     //积分
+	PTicket    int32     //金豆
+	AllPTicket int32     //
+	RegChan    int32     //注册短渠道
+	RegTime    time.Time //注册时间
+	RegSID     int32
+	Gender     int8   //性别
+	HeadID     int32  //系统头像id
+	THUrl      string //第三方头像地址
+	PhNum      string //绑定手机号
+	GameID     int32
+	ServerID   string
+	PropList   []PropInfo //道具列表
 }
-
 type TablePlayer struct {
 	Userid        int64 //
 	Siteid        int32
@@ -101,8 +89,30 @@ type TablePlayer struct {
 	Gamestatus    int32 //
 }
 
-type Loginagainres struct {
-	Selfbaseinfo LoginRes
+type LoginAgainRes struct {
+	UserID       int64
+	ErrCode      int32
+	Account      string //用户账号
+	Token        string
+	AcIndex      int32     //用户账号所属机器码的序号
+	AcType       int16     //账号类型
+	AppID        string    //对外产品ID
+	SID          int32     //对内产品ID
+	IsValid      int8      //账号是否冻结
+	NickName     string    //用户昵称
+	GameCoin     int64     //积分
+	PTicket      int32     //金豆
+	AllPTicket   int32     //
+	RegChan      int32     //注册短渠道
+	RegTime      time.Time //注册时间
+	RegSID       int32
+	Gender       int8   //性别
+	HeadID       int32  //系统头像id
+	THUrl        string //第三方头像地址
+	PhNum        string //绑定手机号
+	GameID       int32
+	ServerID     string
+	PropList     []PropInfo //道具列表
 	Tableplayers []TablePlayer
 }
 
@@ -114,12 +124,12 @@ const (
 	SitErr_NoLogin
 )
 
-type Sitdownreq struct {
+type SitDownReq struct {
 	Tableid int32 //
 	Chairid int32 //
 }
 
-type Sitdownres struct {
+type SitDownRes struct {
 	Errcode int32 //错误码
 	Tableid int32 //桌子号
 	Chairid int32 //椅子号
@@ -139,15 +149,15 @@ const (
 	Handuperr_room_closed
 )
 
-type Handupreq struct {
+type HandUpReq struct {
 	Handup int8
 }
 
-type Handupres struct {
+type HandUpRes struct {
 	Errcode int32
 }
 
-type Handupnotice struct {
+type HandUpNotice struct {
 	Tableid int32
 	Chairid int32
 }
@@ -158,14 +168,14 @@ const (
 	TableLeave_ChangeTable
 )
 
-type Tableplayerleavereq struct {
+type TablePlayerLeaveReq struct {
 	Leavetype int32 //离开类型
 }
-type Tableplayerleaveres struct {
+type TablePlayerLeaveRes struct {
 	Errcode   int32
 	Leavetype int32 //离开类型
 }
-type Tableplayerleavenotice struct {
+type TablePlayerLeaveNotice struct {
 	Userid  int64 //
 	Tableid int32
 	Chairid int32 //
@@ -178,7 +188,7 @@ const (
 	Kickout_room_closed           //房间已关闭
 )
 
-type Kickoutres struct {
+type KickOutRes struct {
 	Errcode int32
 	Errmsg  string
 }

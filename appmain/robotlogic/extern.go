@@ -20,21 +20,24 @@ type RobotNode struct {
 	UserID   int64
 	NickName string
 	GameCoin int64
+	TableID  int32
+	ChairID  int32
 }
 
 var gRobotCalID uint64 = 1
 
 func (p *RobotNode) Initialize() {
 	p.PlayerID = atomic.AddUint64(&gRobotCalID, 1)
+	p.TableID = -1
+	p.ChairID = -1
 }
 func (p *RobotNode) GameBegin() {}
 func (p *RobotNode) GameEnd()   {}
 func (f *RobotLogic) HandleRobotMsg(args []interface{}) {
-	userID := args[0].(int64)
-	msg := args[1].(*msg.RobotMessage)
+	msg := args[0].(*msg.RobotMessage)
 	routeParam := strings.Split(msg.Route, ".")
 	if fn, ok := f.MapReqHandler[routeParam[len(routeParam)-1]]; ok {
-		fn(userID, msg.Msg)
+		fn(msg.UserID, msg.ReqMsg)
 	} else {
 		log.Error("route:%s not found", msg.Route)
 	}
@@ -46,18 +49,45 @@ func (f *RobotLogic) RegisteRobotMsg() {
 	f.MapReqHandler = make(map[string]base.RobotHandler)
 	f.workingRobot = make(map[int64]*RobotNode)
 	//此处添加机器人消息处理句柄
-	f.MapReqHandler["ApplyRobot"] = f.handleApplyRobot
+	f.MapReqHandler["LoginRes"] = f.handleApplyRobot
 	f.MapReqHandler["SitDownRes"] = f.handleSitDownRes
-	f.MapReqHandler["LeaveReq"] = f.handleLeaveReq
+	f.MapReqHandler["TablePlayerLeaveRes"] = f.handleLeaveRes
 }
-func (f *RobotLogic) handleApplyRobot(userID int64, msg interface{}) {
-
+func (f *RobotLogic) handleApplyRobot(userID int64, robotmsg interface{}) {
+	loginRes := robotmsg.(msg.ApplyRobotReq)
+	if _, ok := f.workingRobot[loginRes.UserID]; ok {
+		log.Error("robot:%v is already in use", loginRes.UserID)
+		return
+	}
+	player := f.OnCreateRobot().(*RobotNode)
+	player.Initialize()
+	player.UserID = loginRes.UserID
+	player.GameCoin = loginRes.GameCoin
+	player.NickName = loginRes.NickName
+	player.TableID = loginRes.TableID
+	player.ChairID = loginRes.ChairID
+	f.workingRobot[player.UserID] = player
+	base.SendRobotMsg2Game("Game.SitDown", player.UserID, msg.SitDownReq{
+		Tableid: player.TableID,
+		Chairid: player.ChairID,
+	})
 }
-func (f *RobotLogic) handleSitDownRes(userID int64, msg interface{}) {
-
+func (f *RobotLogic) handleSitDownRes(userID int64, robotmsg interface{}) {
+	sitRes := robotmsg.(msg.SitDownRes)
+	if sitRes.Errcode != 0 {
+		log.Error("robot:%v sitRes.Errcode:%v", userID, sitRes.Errcode)
+	}
+	if player, ok := f.workingRobot[userID]; ok {
+		player.TableID = sitRes.Tableid
+		player.ChairID = sitRes.Chairid
+		base.SendRobotMsg2Game("Game.HandUp", player.UserID, msg.HandUpReq{})
+	}
 }
-func (f *RobotLogic) handleLeaveReq(userID int64, msg interface{}) {
-
+func (f *RobotLogic) handleLeaveRes(userID int64, robotmsg interface{}) {
+	if player, ok := f.workingRobot[userID]; ok {
+		log.Debug("robot:%v tableid:%v chairid:%v leavetable", userID, player.TableID, player.ChairID)
+		delete(f.workingRobot, userID)
+	}
 }
 func (f *RobotLogic) OnRobotLoginIn(player base.IPlayerNode, loginmsg interface{}) {
 
@@ -66,7 +96,8 @@ func (f *RobotLogic) OnRobotLoginOut(player base.IPlayerNode) {
 
 }
 func (f *RobotLogic) CloseRobot(player base.IPlayerNode) {
-
+	playerNode := player.(*RobotNode)
+	base.SendRobotMsg2Game("Game.LeaveScene", playerNode.UserID, msg.TablePlayerLeaveReq{})
 }
 func (f *RobotLogic) OnDestroy() {
 

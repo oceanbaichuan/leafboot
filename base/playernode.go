@@ -39,6 +39,7 @@ type ClientNode struct {
 	Userisrobot           bool      //是否机器人
 	Userlastopertime      time.Time //上次操作时间,只针对登录，入座，准备,打牌,离桌做记录
 	Userlogintime         time.Time //登录时间点
+	LastUpateTokenTime    time.Time //
 	Usertableid           int32     //座位号
 	Userchairid           int32     //椅子号
 	ProxyClientID         uint64    //代理客户端ID
@@ -122,11 +123,12 @@ func (player *ClientNode) Initialize() {
 	player.Usergamestatus = PlayerstatuInitial
 	player.Usernodeinfo = msg.LoginRes{}
 	player.Useraccountdbw.Proplist = make(map[int32]map[int32]msg.UserPropChange)
+	player.LastUpateTokenTime = time.Now()
 }
 func (player *ClientNode) OnTimer() {
 	//sitdown too long to handup,close or autohandup
 	if player.Usergamestatus == PlayerstatuHaveSitDown {
-		kickout := msg.Kickoutres{
+		kickout := msg.KickOutRes{
 			Errcode: msg.Kickout_toolong_handup,
 			Errmsg:  "Kickout_toolong_handup",
 		}

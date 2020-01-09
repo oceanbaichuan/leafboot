@@ -7,6 +7,7 @@ replace github.com/name5566/leaf v0.0.0-20191028103944-deca55354100 => ../github
 require (
 	github.com/coreos/etcd v3.3.18+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
+	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/goinggo/mapstructure v0.0.0-20140717182941-194205d9b4a9
 	github.com/jinzhu/gorm v1.9.11
 	github.com/json-iterator/go v1.1.9 // indirect

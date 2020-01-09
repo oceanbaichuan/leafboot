@@ -1,7 +1,6 @@
 package base
 
 import (
-	"errors"
 	"reflect"
 
 	"github.com/hudgit2019/leafboot/msg"
@@ -37,7 +36,34 @@ func SendRspMsg(player IPlayerNode, m interface{}) error {
 		} else {
 			rspBody.RspID = clientNode.PlayerID
 		}
-		netagent.WriteMsg(rspBody)
+		if !clientNode.Userisrobot {
+			netagent.WriteMsg(rspBody)
+		} else {
+			rspBody.RspID = uint64(clientNode.Usernodeinfo.Userid)
+			sendGameMsg2Robot(rspBody)
+		}
+	}
+	return nil
+}
+
+//SendAutoReqMsg 自动包装消息内容
+func SendAutoReqMsg(player IPlayerNode, route string, reqID uint64, m interface{}) error {
+	reqBody := &msg.RequestData{
+		Route:   route,
+		ReqID:   reqID,
+		ReqData: m,
+	}
+	if player.IsProxyNode() {
+		netagent := player.(*ProxyNode).Netagent
+		netagent.WriteMsg(reqBody)
+	} else {
+		clientNode := player.(*ClientNode)
+		netagent := clientNode.Netagent
+		if !clientNode.Userisrobot {
+			netagent.WriteMsg(reqBody)
+		} else {
+
+		}
 	}
 	return nil
 }
@@ -48,7 +74,10 @@ func SendReqMsg(player IPlayerNode, m interface{}) error {
 	} else {
 		clientNode := player.(*ClientNode)
 		netagent := clientNode.Netagent
-		netagent.WriteMsg(m)
+		if !clientNode.Userisrobot {
+			netagent.WriteMsg(m)
+		} else {
+		}
 	}
 	return nil
 }
@@ -67,7 +96,13 @@ func SendFailMsg(player IPlayerNode, code int32, message string, m interface{}) 
 		} else {
 			rspBody.RspID = clientNode.PlayerID
 		}
-		netagent.WriteMsg(rspBody)
+		if !clientNode.Userisrobot {
+			netagent.WriteMsg(rspBody)
+		} else {
+			rspBody.RspID = uint64(clientNode.Usernodeinfo.Userid)
+			sendGameMsg2Robot(rspBody)
+		}
+
 	}
 }
 func SendFailMsgWithID(player IPlayerNode, rspID uint64, code int32, message string, m interface{}) {
@@ -80,22 +115,29 @@ func SendFailMsgWithID(player IPlayerNode, rspID uint64, code int32, message str
 		netagent.WriteMsg(rspBody)
 	} else {
 		netagent := player.(*ClientNode).Netagent
-		netagent.WriteMsg(rspBody)
+		if !player.(*ClientNode).Userisrobot {
+			netagent.WriteMsg(rspBody)
+		} else {
+			rspBody.RspID = uint64(player.(*ClientNode).Usernodeinfo.Userid)
+			sendGameMsg2Robot(rspBody)
+		}
 	}
 }
 
 //SendMsg2Robot 玩法区与AI区通信
-func SendGameMsg2Robot(args []interface{}) error {
-	if len(args) != 2 {
-		return errors.New("Invalid arguments!first must be PlayerNode,second must be msg!")
-	}
-	return RobotChanRPC.Call0(reflect.TypeOf(args[1]), args...)
+func sendGameMsg2Robot(robotmsg interface{}) error {
+	// if len(args) != 2 {
+	// 	return errors.New("Invalid arguments!first must be PlayerNode,second must be msg!")
+	// }
+	return RobotChanRPC.Call0(reflect.TypeOf(&msg.ResponseData{}), robotmsg)
 }
 
 //SendMsg2GameLogic AI区与玩法区通信
-func SendRobotMsg2Game(args []interface{}) error {
-	if len(args) != 2 {
-		return errors.New("Invalid arguments!first must be PlayerNode,second must be msg!")
+func SendRobotMsg2Game(route string, userID int64, robotmsg interface{}) error {
+	reqBody := &msg.RobotMessage{
+		Route:  route,
+		UserID: userID,
+		ReqMsg: robotmsg,
 	}
-	return GameChanRPC.Call0(reflect.TypeOf(args[1]), args...)
+	return GameChanRPC.Call0(reflect.TypeOf(&msg.RobotMessage{}), reqBody)
 }
