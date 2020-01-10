@@ -25,8 +25,8 @@ func (f *FactoryGameLogic) keepAlive() {
 	for {
 		for _, v := range base.PlayerList.GetAllPlayers() {
 			playerNode := v.(*base.ClientNode)
-			//5分钟更新一次token
-			if time.Now().Minute()-playerNode.LastUpateTokenTime.Minute() >= 1 {
+			//前端逻辑服器,5分钟更新一次token
+			if f.IsFrontend() && time.Now().Unix()-playerNode.LastUpateTokenTime.Unix() >= 300 {
 				log.Debug("player:%v updatetoken", playerNode.Usernodeinfo.Userid)
 				db.UpdateATokenTTF(playerNode.Usernodeinfo.Userid)
 				playerNode.LastUpateTokenTime = time.Now()
@@ -36,7 +36,7 @@ func (f *FactoryGameLogic) keepAlive() {
 	}
 }
 
-//updateFlag 更新房间状态到连接层
+//listenEtcdConf 监听所有配置更新
 func (f *FactoryGameLogic) listenEtcdConf() {
 	for {
 		select {
@@ -57,6 +57,14 @@ func (f *FactoryGameLogic) listenEtcdConf() {
 		case etcdconf := <-conf.ChanChildConf:
 			{
 				f.CallBackEtcdConf(etcdconf.Action, etcdconf.Key, etcdconf.Value)
+			}
+		case dbinfo := <-conf.ChanDataBase:
+			{
+				db.OpenDBGroup(dbinfo)
+			}
+		case redisinfo := <-conf.ChanRedisInfo:
+			{
+				myredis.OpenRedisGroup(redisinfo)
 			}
 		}
 
@@ -357,4 +365,9 @@ func (f *FactoryGameLogic) OnDestroy() {
 	for _, playerint := range base.PlayerList.GetAllPlayers() {
 		f.ClosePlayer(playerint)
 	}
+}
+
+//IsFrontend 是否是前端服务器
+func (f *FactoryGameLogic) IsFrontend() bool {
+	return true
 }

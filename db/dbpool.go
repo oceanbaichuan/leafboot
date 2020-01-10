@@ -31,11 +31,26 @@ func StartDB() {
 			log.Fatal(" StartDB err:%v", err)
 		}
 	}
-	//监听数据库列表
-	go ListenDB()
-
 }
 func OpenDBGroup(dbinfo conf.DatabaseInfo) error {
+	bHas := false
+	for k, rslist := range mapDBList {
+		for i, v := range rslist {
+			if v.dbinfo.Host == dbinfo.Host &&
+				v.dbinfo.Port == dbinfo.Port &&
+				v.dbinfo.DataBase == dbinfo.DataBase {
+				mapDBList[k][i].dbinfo = dbinfo
+				bHas = true
+				break
+			}
+		}
+		if bHas {
+			break
+		}
+	}
+	if bHas {
+		return nil
+	}
 	tmpconn, err := OpenDB(dbinfo)
 	if err == nil {
 		dbSharding := DBShareding{
@@ -56,34 +71,7 @@ func OpenDBGroup(dbinfo conf.DatabaseInfo) error {
 	}
 	return nil
 }
-func ListenDB() {
-	for {
-		select {
-		case dbinfo := <-conf.ChanDataBase:
-			{
-				bHas := false
-				for k, rslist := range mapDBList {
-					for i, v := range rslist {
-						if v.dbinfo.Host == dbinfo.Host &&
-							v.dbinfo.Port == dbinfo.Port &&
-							v.dbinfo.DataBase == dbinfo.DataBase {
-							mapDBList[k][i].dbinfo = dbinfo
-							bHas = true
-							break
-						}
-					}
-					if bHas {
-						break
-					}
-				}
-				if !bHas {
-					OpenDBGroup(dbinfo)
-				}
 
-			}
-		}
-	}
-}
 func OpenDB(dbinfo conf.DatabaseInfo) (dbconn *gorm.DB, err error) {
 
 	if dbinfo.DbType == "mysql" {

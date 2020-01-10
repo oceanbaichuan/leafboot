@@ -250,7 +250,7 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 		f.ClosePlayer(succplayer)
 		return
 	}
-	base.SendRspMsg(succplayer, succplayer.Usernodeinfo)
+	base.SendRspMsg(succplayer, clientLoginRsp)
 	base.PlayerList.AddPlayer(dbloginres.Userid, succplayer)
 	//记录登录完成时间点
 	succplayer.Userlastopertime = time.Now()

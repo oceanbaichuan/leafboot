@@ -36,10 +36,25 @@ func StartRedis() {
 
 		}
 	}
-	//监听redis列表
-	go ListenRedis()
 }
 func OpenRedisGroup(dbinfo conf.RedisInfo) error {
+	bHas := false
+	for k, rslist := range mapDBList {
+		for i, v := range rslist {
+			if v.dbinfo.Addr == dbinfo.Addr &&
+				v.dbinfo.RedisName == dbinfo.RedisName {
+				mapDBList[k][i].dbinfo = dbinfo
+				bHas = true
+				break
+			}
+		}
+		if bHas {
+			break
+		}
+	}
+	if bHas {
+		return nil
+	}
 	tmpconn, err := OpenRedis(dbinfo)
 	if err == nil {
 		dbSharding := RedisShareding{
@@ -60,32 +75,7 @@ func OpenRedisGroup(dbinfo conf.RedisInfo) error {
 	}
 	return nil
 }
-func ListenRedis() {
-	for {
-		select {
-		case dbinfo := <-conf.ChanRedisInfo:
-			{
-				bHas := false
-				for k, rslist := range mapDBList {
-					for i, v := range rslist {
-						if v.dbinfo.Addr == dbinfo.Addr &&
-							v.dbinfo.RedisName == dbinfo.RedisName {
-							mapDBList[k][i].dbinfo = dbinfo
-							bHas = true
-							break
-						}
-					}
-					if bHas {
-						break
-					}
-				}
-				if !bHas {
-					OpenRedisGroup(dbinfo)
-				}
-			}
-		}
-	}
-}
+
 func OpenRedis(dbinfo conf.RedisInfo) (dbconn *redis.Client, err error) {
 	redisdb := redis.NewClient(&redis.Options{
 		Addr:     dbinfo.Addr,
