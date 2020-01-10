@@ -125,6 +125,7 @@ const (
 )
 
 type SitDownReq struct {
+	Levelid int32 //桌子等级
 	Tableid int32 //
 	Chairid int32 //
 }

@@ -17,8 +17,9 @@ import (
 )
 
 type FactoryGameLogic struct {
-	Curgamenum int64 //当前牌局计数，初始化为时间戳
-	GameTables []base.ITable
+	Curgamenum    int64 //当前牌局计数，初始化为时间戳
+	GameTables    []base.ITable
+	MapLevelTable map[int32][]base.ITable
 }
 
 func (f *FactoryGameLogic) keepAlive() {
@@ -82,11 +83,12 @@ func (f *FactoryGameLogic) Start(netgate *gate.Gate) error {
 	return nil
 }
 func (f *FactoryGameLogic) CreateRoom() error {
-	for i := 0; i < int(conf.RoomInfo.MaxTableNum); i++ {
+	for i := 1; i <= int(conf.RoomInfo.MaxTableNum); i++ {
 		table := f.OnCreateTable()
-		table.Init(conf.RoomInfo.MaxTableChair, f)
+		table.Init(int32(i), conf.RoomInfo.MaxTableChair, f)
 		f.GameTables = append(f.GameTables, table)
 	}
+	f.MapLevelTable = make(map[int32][]base.ITable)
 	return nil
 }
 func (f *FactoryGameLogic) OnCreateTable() base.ITable {

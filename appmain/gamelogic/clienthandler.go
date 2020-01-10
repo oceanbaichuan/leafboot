@@ -185,7 +185,8 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 		log.Error("userid:%v IsInValid", dbloginres.Userid)
 		f.ClosePlayer(succplayer)
 		return
-	} else if dbloginres.OtherGameID > 0 && (dbloginres.OtherGameID != conf.RoomInfo.GameID ||
+	} else if conf.RoomInfo.GameID != 0 &&
+		dbloginres.OtherGameID > 0 && (dbloginres.OtherGameID != conf.RoomInfo.GameID ||
 		dbloginres.OtherRoomID != conf.RoomInfo.NodeID) {
 		log.Error("userid:%v in other room %v %v", dbloginres.Userid, dbloginres.OtherGameID, dbloginres.OtherRoomID)
 		//告诉用户登录失败
@@ -265,7 +266,7 @@ func (f *FactoryGameLogic) handleSitdownReq(args []interface{}) {
 	clientReq := args[0].(*msg.RequestData)
 	// 消息的发送者
 	playerInt := args[1].(base.IPlayerNode)
-	req := msg.SitDownRes{}
+	req := msg.SitDownReq{}
 	mapstructure.Decode(clientReq.ReqData, &req)
 	log.Debug("sitdown %v", req)
 	routeParam := strings.Split(clientReq.Route, ".")
@@ -301,16 +302,61 @@ func (f *FactoryGameLogic) handleSitdownReq(args []interface{}) {
 		base.SendRspMsg(player, sitres)
 		return
 	}
-	f.ArrangePlayerSitDownReq(player, req.Tableid, req.Chairid)
+	f.ArrangePlayerSitDownReq(player, req)
 }
-func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, tableid int32, chairid int32) {
+func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, req msg.SitDownReq) {
 	var fittable base.ITable
 	sitres := msg.SitDownRes{}
-	if tableid > 0 && tableid <= conf.RoomInfo.MaxTableNum {
+	tableid := req.Tableid
+	chairid := req.Chairid
+	levelid := req.Levelid
+	canLevel := player.GetAbleTableLevel()
+	if levelid > 0 &&
+		canLevel > 0 &&
+		levelid != canLevel {
+		levelid = canLevel
+	}
+	if levelid > 0 {
+		leveTables, ok := f.MapLevelTable[levelid]
+		if !ok {
+			sitres.Errcode = msg.SitErr_NoFitLocation
+			base.SendRspMsg(player, sitres)
+			log.Error("userid:%v leveltable:%v sitdown err:table not found", player.Usernodeinfo.Userid, levelid)
+			return
+		}
+		bFindTable := false
+		for _, v := range leveTables {
+			tableItem := v.(*base.GameTable)
+			if tableItem.TableStatus == 1 ||
+				tableItem.SitdownPlayers >= conf.RoomInfo.MaxTableChair {
+				continue
+			}
+			for i, _ := range tableItem.TablePlayers {
+				if tableItem.TablePlayers[i] == nil {
+					sitres.Tableid = tableItem.TableID
+					sitres.Chairid = int32(i)
+					fittable = v
+					bFindTable = true
+					break
+				}
+			}
+			if bFindTable {
+				break
+			}
+		}
+		if !bFindTable {
+			sitres.Errcode = msg.SitErr_NoFitLocation
+			base.SendRspMsg(player, sitres)
+			log.Error("userid:%v leveltable:%v sitdown err:alltable are full", player.Usernodeinfo.Userid, levelid)
+			return
+		}
+
+	} else if tableid > 0 && tableid <= conf.RoomInfo.MaxTableNum {
 		gametable, rettableid, retchairid, err := f.FixSearchTable(player, tableid, chairid)
 		sitres.Tableid = rettableid
 		sitres.Chairid = retchairid
 		if err != nil {
+			sitres.Errcode = msg.SitErr_NoFitLocation
 			base.SendRspMsg(player, sitres)
 			log.Error("userid:%v fixtable:%v:%v sitdown err:%v", player.Usernodeinfo.Userid, tableid, chairid, err)
 			return
@@ -322,6 +368,7 @@ func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, tabl
 		sitres.Tableid = rttableid
 		sitres.Chairid = rtchairid
 		if err != nil {
+			sitres.Errcode = msg.SitErr_NoFitLocation
 			base.SendRspMsg(player, sitres)
 			log.Error("userid:%v auto sitdown err:%v", player.Usernodeinfo.Userid, err)
 			return
@@ -330,6 +377,10 @@ func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, tabl
 	}
 	tableitem := fittable.(*base.GameTable)
 	tableitem.SitdownPlayers++
+	//第一个入座的人,自动设置桌子等级
+	if canLevel > 0 && tableitem.SitdownPlayers == 1 {
+		tableitem.TableCurLevel = canLevel
+	}
 	for _, playerint := range tableitem.TablePlayers {
 		if playerint != nil {
 			playernode := playerint.(*base.ClientNode)
@@ -391,9 +442,9 @@ func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, tabl
 func (f *FactoryGameLogic) AutoSearchTable(playernode *base.ClientNode) (base.ITable, int32, int32, error) {
 	var oktable base.ITable
 	var err error
-	tablechair := -1
-	tableid := -1
-	for i, tableint := range f.GameTables {
+	var tablechair int32 = -1
+	var tableid int32 = -1
+	for _, tableint := range f.GameTables {
 		table := tableint.(*base.GameTable)
 		if table.TableStatus == 1 {
 			continue
@@ -401,8 +452,8 @@ func (f *FactoryGameLogic) AutoSearchTable(playernode *base.ClientNode) (base.IT
 		for j, playerint := range table.TablePlayers {
 			if playerint == nil {
 				oktable = table
-				tableid = i + 1
-				tablechair = j + 1
+				tableid = table.TableID
+				tablechair = int32(j) + 1
 				table.TablePlayers[j] = playernode
 				break
 			}
@@ -414,7 +465,7 @@ func (f *FactoryGameLogic) AutoSearchTable(playernode *base.ClientNode) (base.IT
 	if oktable == nil {
 		err = errors.New("no fit table found")
 	}
-	return oktable, int32(tableid), int32(tablechair), err
+	return oktable, tableid, tablechair, err
 }
 
 func (f *FactoryGameLogic) FixSearchTable(playernode *base.ClientNode, tableid int32, chairid int32) (base.ITable, int32, int32, error) {
@@ -555,7 +606,8 @@ func (f *FactoryGameLogic) handleLeaveTableReq(args []interface{}) {
 	}
 	f.OnTableLeave(player)
 	if req.Leavetype == msg.TableLeave_ChangeTable {
-		f.ArrangePlayerSitDownReq(player, 0, 0)
+		sitReq := msg.SitDownReq{}
+		f.ArrangePlayerSitDownReq(player, sitReq)
 	}
 }
 func (f *FactoryGameLogic) OnTableLeave(player *base.ClientNode) {
@@ -593,6 +645,9 @@ func (f *FactoryGameLogic) OnTableLeave(player *base.ClientNode) {
 	}
 	//记录离桌时间点
 	player.Userlastopertime = time.Now()
+	if gametable.SitdownPlayers <= 0 {
+		gametable.RecoverTable()
+	}
 	f.CallBackLeaveTable(player, gametable)
 }
 func (f *FactoryGameLogic) handleLoginOut(args []interface{}) {

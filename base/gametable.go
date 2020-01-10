@@ -26,16 +26,34 @@ type GameTable struct {
 	TablePlayers   []IPlayerNode
 	WatchPlayers   []IPlayerNode
 	Tabletimemap   map[int32]*TableTimer //定时器
+	TableID        int32                 //桌子号
+	TableCurLevel  int32                 //桌子当前等级
+	TableBasePoint int32                 //桌子底注
 	gameLogic      IGameLogic
 }
 
-func (table *GameTable) Init(chairnum int32, flogic IGameLogic) {
+func (table *GameTable) Init(tableid int32, chairnum int32, flogic IGameLogic) {
 	table.TablePlayers = make([]IPlayerNode, chairnum)
 	for j := 0; j < int(chairnum); j++ {
 		table.TablePlayers[j] = nil
 	}
 	table.Tabletimemap = make(map[int32]*TableTimer)
+	table.TableCurLevel = -1
+	table.TableBasePoint = 0
+	table.TableID = tableid
 	table.gameLogic = flogic
+}
+
+//RecoverTable 用户完全离开后，还原桌子某些动态属性到初始状态
+func (table *GameTable) RecoverTable() {
+	table.TableCurLevel = -1
+	table.TableBasePoint = 0
+	for k, v := range table.Tabletimemap {
+		if v.t != nil {
+			v.t.Stop()
+		}
+		delete(table.Tabletimemap, k)
+	}
 }
 func (table *GameTable) ResetTable() {
 	for _, playerint := range table.TablePlayers {
@@ -56,7 +74,7 @@ func (table *GameTable) ResetGameTable() {
 func (table *GameTable) OnTimerCheckBegin() {
 	if table.ReadyPlayers >= conf.RoomInfo.GameStartPlayer {
 		table.gameLogic.Gamestart(table)
-		table.Tabletimemap[Tabletimer_checkbegin] = nil
+		delete(table.Tabletimemap, Tabletimer_checkbegin)
 	} else {
 		//continue checktimer
 		t, _ := table.Tabletimemap[Tabletimer_checkbegin]
@@ -68,7 +86,7 @@ func (table *GameTable) KillTimer(timerid int32) {
 		if t.t != nil {
 			t.t.Stop()
 		}
-		table.Tabletimemap[timerid] = nil
+		delete(table.Tabletimemap, timerid)
 	}
 }
 func (table *GameTable) SetTimer(timerid int32, d time.Duration, cb func()) error {
@@ -98,7 +116,7 @@ func (table *GameTable) GameBegin(gamenum int64) {
 		if v.t != nil {
 			v.t.Stop()
 		}
-		table.Tabletimemap[k] = nil
+		delete(table.Tabletimemap, k)
 	}
 }
 
@@ -109,7 +127,7 @@ func (table *GameTable) GameEnd() {
 		if v.t != nil {
 			v.t.Stop()
 		}
-		table.Tabletimemap[k] = nil
+		delete(table.Tabletimemap, k)
 	}
 	for _, playerint := range table.TablePlayers {
 		if playerint != nil {

@@ -120,10 +120,10 @@ type Playgamelog struct {
 	app_channel_info  string //长渠道id
 	channel_id        int    //短渠道id
 
-	game_id  int //游戏id
-	room_id  int //房间id
-	table_id int //桌子id
-
+	game_id       int    //游戏id
+	room_id       int    //房间id
+	table_id      int    //桌子id
+	table_level   int    //桌子等级
 	launch_from   string //对局来源
 	combat_serial string //对局编号
 	time_begin    int    //对局开始时间(毫秒)

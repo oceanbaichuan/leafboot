@@ -185,6 +185,11 @@ func (player *ClientNode) SyncOldPlayerData(playerold IPlayerNode) {
 func (player *ClientNode) IsProxyedNode() bool {
 	return player.ProxyClientID > 0
 }
+
+//GetAbleTableLevel 获取玩家当前可参与的桌子等级,应用层可重写计算逻辑
+func (player *ClientNode) GetAbleTableLevel() int32 {
+	return -1
+}
 func (player *ProxyNode) Initialize() {
 	player.PlayerNode.Initialize()
 	player.MapClient = make(map[uint64]*ClientNode)
