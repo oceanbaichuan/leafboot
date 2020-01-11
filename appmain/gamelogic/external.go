@@ -76,7 +76,10 @@ func (f *FactoryGameLogic) Start(netgate *gate.Gate) error {
 	f.Curgamenum = time.Now().Unix()
 	f.CreateRoom()
 	conf.StartEtcd()
-	db.StartDB()
+	err := db.StartDB()
+	if err != nil {
+		log.Fatal("StartDB err:%v", err)
+	}
 	myredis.StartRedis()
 	go f.keepAlive()
 	go f.listenEtcdConf()
@@ -123,8 +126,9 @@ func (f *FactoryGameLogic) OnPlayerConnect(player base.IPlayerNode) {
 				ReqID: playerNode.PlayerID,
 				ReqData: &msg.GameRegistReq{
 					Addr:     conf.Server.WSAddr,
-					NodeName: conf.RoomInfo.NodeName,
-					NodeID:   conf.RoomInfo.NodeID,
+					NodeName: conf.Server.NodeName,
+					NodeID:   conf.Server.NodeID,
+					IsGray:   conf.Server.IsGray,
 				},
 			}
 			base.SendReqMsg(player, &regReq)
@@ -169,7 +173,7 @@ func (f *FactoryGameLogic) OnPlayerClose(player base.IPlayerNode) {
 		//如果是被代理节点,推送到代理解除路由
 		if playernode.IsProxyedNode() {
 			leaveRsp := msg.LeaveSceneRes{
-				Route: conf.RoomInfo.NodeName,
+				Route: conf.Server.NodeName,
 			}
 			base.SendRspMsg(playernode, leaveRsp)
 			proxyNode := playernode.Netagent.UserData().(*base.ProxyNode)
@@ -325,7 +329,7 @@ func (f *FactoryGameLogic) SaveTableGameEnd(table base.ITable) {
 func (f *FactoryGameLogic) HandleAutoGame(player base.IPlayerNode) {
 	f.AutoPlay(player)
 }
-func (f *FactoryGameLogic) applyRobot(robot model.ApplyRobotInfo) (base.IPlayerNode, error) {
+func (f *FactoryGameLogic) ApplyRobot(robot model.ApplyRobotInfo) (base.IPlayerNode, error) {
 	if player, ok := base.PlayerList.GetPlayer(robot.RobotID); ok {
 		return player, errors.New(fmt.Sprintf("RobotID:%v is already in use", robot.RobotID))
 	}
@@ -360,7 +364,7 @@ func (f *FactoryGameLogic) CallBackHandUp(player base.IPlayerNode, table base.IT
 func (f *FactoryGameLogic) CallBackGameStart(table base.ITable)                           {}
 func (f *FactoryGameLogic) CallBackLoginAgain(player base.IPlayerNode)                    {}
 func (f *FactoryGameLogic) AutoPlay(player base.IPlayerNode)                              {}
-func (f *FactoryGameLogic) AppMsgCallBackInit(*map[string]base.MsgHandler)                {}
+func (f *FactoryGameLogic) AppMsgCallBackInit(map[string]base.MsgHandler)                 {}
 func (f *FactoryGameLogic) CallBackEtcdConf(action string, key string, value string)      {}
 func (f *FactoryGameLogic) OnDestroy() {
 	//清除所有在线

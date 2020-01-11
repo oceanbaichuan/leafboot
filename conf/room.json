@@ -1,6 +1,4 @@
 {
-	"NodeName":"DZMJ_601_1",
-	"NodeID":"pc01_1_1",
 	"MaxTableNum"          :300,
 	"MaxOnlineNum"         :1000,
 	"MaxTableChair"        :4,

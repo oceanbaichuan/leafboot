@@ -13,23 +13,30 @@ import (
 const gamedbName = "game_data_db"
 
 func SelectGameData(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
-	dbconn, err := GetDB(gamedbName, datareq.Userid)
+
+	//读取游戏信息
+	dbrconn, err := GetDB(gamedbName, datareq.Userid, DBFLAG_R, true)
 	if err != nil {
-		log.Error("SelectGameData err:%v", err)
+		log.Debug("dbgame SelectGameData account:%s, err:%v", datareq.Account, err)
+		return
+	}
+	dbwconn, err := GetDB(gamedbName, datareq.Userid, DBFLAG_RW, true)
+	if err != nil {
+		log.Debug("dbgame SelectGameData account:%s, err:%v", datareq.Account, err)
 		return
 	}
 	gamedata := model.GameDataRecord{}
 	if result, err := myredis.SelectGameData(gamedbName, datareq); err != nil {
-		dbRow := dbconn.Where("user_id = ? and game_id = ?", datareq.Userid, datareq.Gameid).Find(&gamedata)
+		dbRow := dbrconn.Where("user_id = ? and game_id = ?", datareq.Userid, datareq.Gameid).Find(&gamedata)
 		log.Debug("SelectGameData %v", gamedata)
 		if dbRow.RowsAffected > 0 {
-			dbconn.Model(&model.GameDataRecord{UserID: datareq.Userid,
+			dbwconn.Model(&model.GameDataRecord{UserID: datareq.Userid,
 				GameID: datareq.Gameid}).Update(model.GameDataRecord{
 				LoginIP:   datareq.Loginip,
 				LoginTime: time.Now(),
 			})
 		} else {
-			dbconn.Save(&model.GameDataRecord{
+			dbwconn.Save(&model.GameDataRecord{
 				UserID:     datareq.Userid,
 				GameID:     datareq.Gameid,
 				LoginIP:    datareq.Loginip,
@@ -39,7 +46,7 @@ func SelectGameData(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
 		}
 	} else {
 		gamedata = result[0].(model.GameDataRecord)
-		dbconn.Save(&model.GameDataRecord{
+		dbwconn.Save(&model.GameDataRecord{
 			UserID:     datareq.Userid,
 			GameID:     datareq.Gameid,
 			LoginIP:    datareq.Loginip,
@@ -56,11 +63,11 @@ func SelectGameData(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
 }
 func SaveGameData(data msg.Accountwdatareq) error {
 	//更新游戏属性
-	dbconn, err := GetDB(gamedbName, data.UserID)
+	dbwconn, err := GetDB(gamedbName, data.UserID, DBFLAG_RW, true)
 	if err != nil {
 		return err
 	}
-	dbrow := dbconn.Model(&model.GameDataRecord{UserID: data.UserID, GameID: data.GameID}).Updates(map[string]interface{}{
+	dbrow := dbwconn.Model(&model.GameDataRecord{UserID: data.UserID, GameID: data.GameID}).Updates(map[string]interface{}{
 		"online_time": gorm.Expr("online_time + ?", data.GameOnlinetime),
 		"play_time":   gorm.Expr("play_time + ?", data.GamePlaytime),
 		"play_coin":   gorm.Expr("play_coin + ?", data.GameCoin),
@@ -72,7 +79,7 @@ func SaveGameData(data msg.Accountwdatareq) error {
 		"lose_times":  gorm.Expr("lose_times + ?", data.GameLosetimes),
 	})
 	if dbrow.RowsAffected <= 0 {
-		dbconn.Save(&model.GameDataRecord{
+		dbwconn.Save(&model.GameDataRecord{
 			UserID:      data.UserID,
 			GameID:      data.GameID,
 			OnlineTime:  data.GameOnlinetime,

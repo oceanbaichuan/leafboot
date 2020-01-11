@@ -78,7 +78,7 @@ func (f *FactoryGameLogic) handleLoginGameReq(args []interface{}) {
 		Token:       req.Token,
 		Userid:      req.UserID,
 		Gameid:      conf.RoomInfo.GameID,
-		Serverid:    conf.RoomInfo.NodeID,
+		Serverid:    conf.Server.NodeID,
 		Loginip:     strings.Split(req.LoginIP, ":")[0],
 		AppID:       req.AppID,
 		MacID:       req.MacID,
@@ -187,7 +187,7 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 		return
 	} else if conf.RoomInfo.GameID != 0 &&
 		dbloginres.OtherGameID > 0 && (dbloginres.OtherGameID != conf.RoomInfo.GameID ||
-		dbloginres.OtherRoomID != conf.RoomInfo.NodeID) {
+		dbloginres.OtherRoomID != conf.Server.NodeID) {
 		log.Error("userid:%v in other room %v %v", dbloginres.Userid, dbloginres.OtherGameID, dbloginres.OtherRoomID)
 		//告诉用户登录失败
 		clientLoginRsp.ErrCode = msg.LoginErr_inotherroom
@@ -196,7 +196,7 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 		return
 	} else if dbloginres.OtherGameID > 0 &&
 		dbloginres.OtherGameID == conf.RoomInfo.GameID &&
-		dbloginres.OtherRoomID == conf.RoomInfo.NodeID {
+		dbloginres.OtherRoomID == conf.Server.NodeID {
 		//检测是否重复登录,踢掉老节点
 		oldplayerintf, ok := base.PlayerList.GetPlayer(dbloginres.Userid)
 		if ok {

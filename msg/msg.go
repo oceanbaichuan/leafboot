@@ -11,9 +11,10 @@ var Processor = json.NewProcessor()
 var Processortype = reflect.TypeOf(Processor)
 
 type RequestData struct {
-	Route   string
-	ReqID   uint64
-	ReqData interface{}
+	Route    string
+	ReqID    uint64
+	Protocol string //通信协议:json(默认),protobuf
+	ReqData  interface{}
 }
 type ResponseData struct {
 	Code    int32

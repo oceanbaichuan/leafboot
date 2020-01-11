@@ -1,4 +1,6 @@
 {
+	"NodeName":"DZMJ_601_1",
+	"NodeID":"pc01_1_1",
 	"LogLevel": "debug",
 	"LogPath": "",
 	"BuringPointLogPath":"log/buringpoint.log",
@@ -6,6 +8,7 @@
 	"TCPAddr": "0.0.0.0:3564",
 	"MaxConnNum": 20000,
 	"SysClusterName":"QTTH5_Cluster",
+	"IsGray":0,
 	"DbList":[{
 		"DbType":"mysql",
 		"Host":"10.7.125.120",

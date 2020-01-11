@@ -47,7 +47,7 @@ func StartEtcd() {
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", RedisEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s/Level_%d/%s",
-		APPEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
+		APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
 
 	for _, v := range Server.EtcdKey {
 		cfgetcd := client.Config{
@@ -90,7 +90,7 @@ func writeRoomInfo2Etcd() {
 	gameAPI := client.NewKeysAPI(etcdClient)
 	roominfo, _ := json.Marshal(&RoomInfo)
 	_, err = gameAPI.Create(context.Background(), fmt.Sprintf("%s/%s%s/Level_%d/%s",
-		Server.SysClusterName, APPEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
+		Server.SysClusterName, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
 }
 func registe2Etcd() {
 	for {
@@ -109,7 +109,7 @@ func registe2Etcd() {
 		strNode, _ := json.Marshal(&Server2Etcd.value)
 		strValue := string(strNode[:])
 		_, err = gameAPI.Set(context.Background(), fmt.Sprintf("%s/%s%s/Level_%d/%s",
-			Server.SysClusterName, SelfEtcdDir, RoomInfo.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), strValue,
+			Server.SysClusterName, SelfEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), strValue,
 			&client.SetOptions{TTL: 10 * time.Second})
 		if err != nil {
 			log.Error("err:%v", err)
@@ -156,11 +156,11 @@ func jsonConf2Struct(action string, key string, value string) {
 		json.Unmarshal([]byte(value), &roominfo)
 		RoomInfo.BasePoint = roominfo.BasePoint
 		RoomInfo.CanWatchGame = roominfo.CanWatchGame
-		RoomInfo.GameStartCheckTime = roominfo.GameStartCheckTime
-		RoomInfo.GameStartPlayer = roominfo.GameStartPlayer
-		RoomInfo.MaxOnlineNum = roominfo.MaxOnlineNum
-		RoomInfo.MaxTableNum = roominfo.MaxTableNum
-		RoomInfo.MaxTableChair = roominfo.MaxTableChair
+		// RoomInfo.GameStartCheckTime = roominfo.GameStartCheckTime
+		// RoomInfo.GameStartPlayer = roominfo.GameStartPlayer
+		// RoomInfo.MaxOnlineNum = roominfo.MaxOnlineNum
+		// RoomInfo.MaxTableNum = roominfo.MaxTableNum
+		// RoomInfo.MaxTableChair = roominfo.MaxTableChair
 		RoomInfo.PropIdList = roominfo.PropIdList
 		RoomInfo.RoomCoinDownLimit = roominfo.RoomCoinDownLimit
 		RoomInfo.RoomCoinUpLimit = roominfo.RoomCoinUpLimit
@@ -168,8 +168,8 @@ func jsonConf2Struct(action string, key string, value string) {
 		RoomInfo.GameName = roominfo.GameName
 		RoomInfo.ServerStatus = roominfo.ServerStatus
 		RoomInfo.SitNoHandUpCheckTime = roominfo.SitNoHandUpCheckTime
-		RoomInfo.TaxRate = roominfo.TaxRate
-		RoomInfo.TableTax = roominfo.TableTax
+		// RoomInfo.TaxRate = roominfo.TaxRate
+		// RoomInfo.TableTax = roominfo.TableTax
 		if bInitialized {
 			if RoomInfo.ServerStatus == 0 {
 				ChanRoomFlag <- false //房间关闭

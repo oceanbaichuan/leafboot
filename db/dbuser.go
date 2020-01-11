@@ -15,8 +15,16 @@ import (
 const userdbName = "game_user_db"
 
 func SelectUserInfo(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
-	dbconn, err := GetDB(userdbName, datareq.Userid)
+
+	//读取游戏信息
+	dbrconn, err := GetDB(userdbName, datareq.Userid, DBFLAG_R, true)
 	if err != nil {
+		log.Debug("dbuser SelectUserInfo account:%s, err:%v", datareq.Account, err)
+		return
+	}
+	dbwconn, err := GetDB(userdbName, datareq.Userid, DBFLAG_RW, true)
+	if err != nil {
+		log.Debug("dbuser SelectUserInfo account:%s, err:%v", datareq.Account, err)
 		return
 	}
 	userdata := model.GameUserProperty{}
@@ -80,18 +88,18 @@ func SelectUserInfo(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
 				ServerLevel: datareq.ServerLevel,
 				CreateTime:  time.Now(),
 			}
-			dbconn.Save(&onlineInfo)
+			dbwconn.Save(&onlineInfo)
 			myredis.WriteUserOnline(userdbName, onlineInfo)
 		}
 	} else {
-		dbconn.Find(&userdata, datareq.Userid)
+		dbrconn.Find(&userdata, datareq.Userid)
 		var backpacks []model.GameUserBackpack
 		//daybuysaleRecord := model.GameUserDaybuysaleRecord{}
-		dbconn.Find(&userCurrency, datareq.Userid)
-		dbconn.Find(&backpacks, datareq.Userid)
+		dbrconn.Find(&userCurrency, datareq.Userid)
+		dbrconn.Find(&backpacks, datareq.Userid)
 		//dbconn.Find(&daybuysaleRecord, datareq.Userid)
-		dbconn.Find(&userDayProperty, datareq.Userid)
-		dbconn.Find(&userOnline, datareq.Userid)
+		dbrconn.Find(&userDayProperty, datareq.Userid)
+		dbrconn.Find(&userOnline, datareq.Userid)
 		//道具
 		for _, v := range backpacks {
 			prop := msg.PropInfo{
@@ -115,7 +123,7 @@ func SelectUserInfo(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
 		if userOnline.GameID == 0 &&
 			datareq.Gameid > 0 &&
 			datareq.Serverid != "" {
-			dbconn.Save(&onlineInfo)
+			dbwconn.Save(&onlineInfo)
 		}
 		userdata.UserID = datareq.Userid
 		userDayProperty.UserID = datareq.Userid
@@ -162,27 +170,28 @@ func SelectUserInfo(datareq *msg.Accountrdatareq, account *msg.LoginRes) {
 }
 func DeleteOnline(userid int64) {
 	//Accountconn.dbconn.Table("QPGameUserDB.dbo.UserOnlineStatus").Where("userid = ?", userid).Delete()
-	dbconn, err := GetDB(userdbName, userid)
+	dbwconn, err := GetDB(userdbName, userid, DBFLAG_RW, true)
 	if err != nil {
-		log.Error("DeleteOnline err:%v", err)
+		log.Error("DeleteOnline userid:%v err:%v", userid, err)
 		return
 	}
-	dbconn.Delete(&model.GameUserOnline{UserID: userid})
+	dbwconn.Delete(&model.GameUserOnline{UserID: userid})
 	myredis.DeleteOnline(userdbName, userid)
 }
 func SaveUserProperty(data msg.Accountwdatareq) error {
-	dbconn, err := GetDB(userdbName, data.UserID)
+	dbwconn, err := GetDB(userdbName, data.UserID, DBFLAG_RW, true)
 	if err != nil {
+		log.Error("SaveUserProperty userid:%v err:%v", data.UserID, err)
 		return err
 	}
 	//更新货币
 	if data.GameCoin != 0 || data.PrizeTicket != 0 {
-		dbrow := dbconn.Model(&model.GameUserCurrency{UserID: data.UserID}).Updates(map[string]interface{}{
+		dbrow := dbwconn.Model(&model.GameUserCurrency{UserID: data.UserID}).Updates(map[string]interface{}{
 			"game_coin":    gorm.Expr("game_coin + ?", data.GameCoin),
 			"prize_ticket": gorm.Expr("prize_ticket + ?", data.PrizeTicket),
 		})
 		if dbrow.RowsAffected <= 0 {
-			dbconn.Save(&model.GameUserCurrency{
+			dbwconn.Save(&model.GameUserCurrency{
 				UserID:      data.UserID,
 				GameCoin:    data.GameCoin,
 				PrizeTicket: data.PrizeTicket,
@@ -191,7 +200,7 @@ func SaveUserProperty(data msg.Accountwdatareq) error {
 		}
 	}
 	//更新总属性
-	dbrow := dbconn.Model(&model.GameUserProperty{UserID: data.UserID}).Updates(map[string]interface{}{
+	dbrow := dbwconn.Model(&model.GameUserProperty{UserID: data.UserID}).Updates(map[string]interface{}{
 		"online_time":      gorm.Expr("online_time + ?", data.GameOnlinetime),
 		"play_time":        gorm.Expr("play_time + ?", data.GamePlaytime),
 		"play_coin":        gorm.Expr("play_coin + ?", data.GameCoin),
@@ -200,7 +209,7 @@ func SaveUserProperty(data msg.Accountwdatareq) error {
 		"play_tax":         gorm.Expr("play_tax + ?", data.GameTax),
 	})
 	if dbrow.RowsAffected <= 0 {
-		dbconn.Save(&model.GameUserProperty{
+		dbwconn.Save(&model.GameUserProperty{
 			UserID:          data.UserID,
 			OnlineTime:      data.GameOnlinetime,
 			PlayTime:        data.GamePlaytime,
@@ -212,7 +221,7 @@ func SaveUserProperty(data msg.Accountwdatareq) error {
 		})
 	}
 	//更新每日属性
-	dbrow = dbconn.Model(&model.GameUserDayProperty{UserID: data.UserID}).Updates(map[string]interface{}{
+	dbrow = dbwconn.Model(&model.GameUserDayProperty{UserID: data.UserID}).Updates(map[string]interface{}{
 		"online_time":      gorm.Expr("online_time + ?", data.GameOnlinetime),
 		"play_time":        gorm.Expr("play_time + ?", data.GamePlaytime),
 		"play_coin":        gorm.Expr("play_coin + ?", data.GameCoin),
@@ -222,7 +231,7 @@ func SaveUserProperty(data msg.Accountwdatareq) error {
 		"help_times":       gorm.Expr("help_times + ?", data.HelpTimes),
 	})
 	if dbrow.RowsAffected <= 0 {
-		dbconn.Save(&model.GameUserDayProperty{
+		dbwconn.Save(&model.GameUserDayProperty{
 			UserID:          data.UserID,
 			OnlineTime:      data.GameOnlinetime,
 			PlayTime:        data.GamePlaytime,
@@ -239,12 +248,12 @@ func SaveUserProperty(data msg.Accountwdatareq) error {
 			PropID:   v.Propid,
 			PropType: v.Proptype,
 		}
-		dbrow = dbconn.Model(prop).Updates(map[string]interface{}{
+		dbrow = dbwconn.Model(prop).Updates(map[string]interface{}{
 			"prop_count": gorm.Expr("prop_count + ?", v.Propnum),
 			"prop_time":  gorm.Expr("prop_time + ?", v.Proptime),
 		})
 		if dbrow.RowsAffected <= 0 {
-			dbconn.Save(&model.GameUserBackpack{
+			dbwconn.Save(&model.GameUserBackpack{
 				UserID:     data.UserID,
 				PropID:     v.Propid,
 				PropType:   v.Proptype,

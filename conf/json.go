@@ -27,6 +27,10 @@ var Server struct {
 	ProfilePath        string
 	PropIdList         []int32
 	SysClusterName     string //本应用所属系统集群名称
+	IsGray             int8   //是否灰度
+	NodeName           string //gamename_gameid_roomlevel
+	NodeID             string //pcid_roomserialid
+	CfgDir             string
 	//平台库
 	DbList []DatabaseInfo
 	//redis 列表
@@ -36,6 +40,7 @@ var Server struct {
 	EtcdKey  []string
 }
 
+//DatabaseInfo 数据库部署采用M(应用主写)-M(应用主读)-S(后台读)模式
 type DatabaseInfo struct {
 	MinUID   int64 //分库用户ID起始
 	MaxUID   int64 //分库用户ID截止
@@ -44,7 +49,9 @@ type DatabaseInfo struct {
 	UserName string
 	Passwd   string
 	DataBase string
-	DbType   string
+	DbType   string // mysql,mssql等等
+	IsMaster int8   //1:master 0：slave
+	DbRWFlag string //write|read,readonly
 }
 type RedisInfo struct {
 	Addr      string
@@ -85,9 +92,6 @@ type ProxyNodeInfo struct {
 }
 
 type RoomInfoDef struct {
-	NodeName             string //gamename_gameid_roomlevel
-	NodeID               string //pcid_roomserialid
-	CfgDir               string
 	GameID               int32
 	RoomLevel            int32
 	MaxTableNum          int32 //最大桌子数
@@ -136,8 +140,8 @@ func init() {
 	if err != nil {
 		log.Fatal("%v", err)
 	}
-	roomflags := strings.Split(RoomInfo.NodeName, "_")
-	RoomInfo.CfgDir = strings.Join(roomflags[:2], "_")
+	roomflags := strings.Split(Server.NodeName, "_")
+	Server.CfgDir = strings.Join(roomflags[:2], "_")
 	gameID, err := strconv.Atoi(roomflags[1])
 	if err != nil {
 		log.Fatal("%v", err)
@@ -152,14 +156,14 @@ func init() {
 	nodeinfo.CertFile = Server.CertFile
 	nodeinfo.KeyFile = Server.KeyFile
 	nodeinfo.MaxConnNum = Server.MaxConnNum
-	nodeinfo.NodeID = RoomInfo.NodeID
-	nodeinfo.NodeName = RoomInfo.NodeName
+	nodeinfo.NodeID = Server.NodeID
+	nodeinfo.NodeName = Server.NodeName
 	nodeinfo.TCPAddr = Server.TCPAddr
 	nodeinfo.WSAddr = Server.WSAddr
-	nodeinfo.RouterName = RoomInfo.NodeName
+	nodeinfo.RouterName = Server.NodeName
 	hashdig := md5.New()
 	hashdig.Write([]byte(fmt.Sprintf("%s",
-		Server.TCPAddr) + RoomInfo.NodeID))
+		Server.TCPAddr) + Server.NodeID))
 	sercode := hashdig.Sum([]byte(""))
 	Server2Etcd.key = fmt.Sprintf("%x", sercode)
 	// strNode, err := json.Marshal(&nodeinfo)

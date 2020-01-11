@@ -18,11 +18,17 @@ func intit() {
 }
 func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 	//读取账户基本信息
-	dbconn, err := GetDB(accountdbName, datareq.Userid)
+	dbrconn, err := GetDB(accountdbName, datareq.Userid, DBFLAG_R, true)
 	if err != nil {
 		log.Debug("dbaccount SelectAccount account:%s, err:%v", datareq.Account, err)
 		return err
 	}
+	dbwconn, err := GetDB(accountdbName, datareq.Userid, DBFLAG_RW, true)
+	if err != nil {
+		log.Debug("dbaccount SelectAccount account:%s, err:%v", datareq.Account, err)
+		return err
+	}
+
 	loginInfo := model.AccountLastloginInfo{
 		UserID:          datareq.Userid,
 		LastLoginIP:     datareq.Loginip,
@@ -40,7 +46,7 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 	if acResult, err := myredis.SelectAccount(accountdbName, datareq); err != nil {
 		//如果是登录服加载
 		if bFromLoginSer {
-			row := dbconn.Where("account = ? and passwd = ?", datareq.Account, datareq.Passwd).Find(&accountInfo)
+			row := dbrconn.Where("account = ? and passwd = ?", datareq.Account, datareq.Passwd).Find(&accountInfo)
 			if row.RowsAffected < 1 {
 				account.Errcode = msg.LoginErr_nouser
 				return row.Error
@@ -51,7 +57,7 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 			}
 			datareq.Userid = accountInfo.UserID
 		} else {
-			row := dbconn.Where("user_id = ? and passwd = ?", datareq.Userid, datareq.Passwd).Find(&accountInfo)
+			row := dbrconn.Where("user_id = ? and passwd = ?", datareq.Userid, datareq.Passwd).Find(&accountInfo)
 			if row.RowsAffected < 1 {
 				account.Errcode = msg.LoginErr_nouser
 				return row.Error
@@ -61,14 +67,14 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 				return nil
 			}
 		}
-		dbconn.Find(&asinfo, datareq.Userid)
-		dbconn.Find(&atinfo, datareq.Userid)
-		dbconn.Find(&alinfo, datareq.Userid)
+		dbrconn.Find(&asinfo, datareq.Userid)
+		dbrconn.Find(&atinfo, datareq.Userid)
+		dbrconn.Find(&alinfo, datareq.Userid)
 		account.Token = base.GernateToken(account.Account, datareq.Userid)
 		loginInfo.UserID = datareq.Userid
 		//更新登录记录
 		if bFromLoginSer {
-			dbconn.Save(&loginInfo)
+			dbwconn.Save(&loginInfo)
 		}
 		atinfo.UserID = datareq.Userid
 		asinfo.UserID = datareq.Userid

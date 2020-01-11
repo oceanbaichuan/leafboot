@@ -27,8 +27,8 @@ func (g *GuessLogic) CreateClientPlayer() base.IPlayerNode {
 }
 
 //AppMsgCallBack 应用层用来注册消息回调，重写方法,例如:mapMsg["LeaveTable"]= f.handleLeaveTableReq
-func (g *GuessLogic) AppMsgCallBackInit(mapMsg *map[string]base.MsgHandler) {
-	//mapMsg["LeaveTable"]= f.handleLeaveTableReq
+func (g *GuessLogic) AppMsgCallBackInit(mapMsg map[string]base.MsgHandler) {
+	//mapMsg["LeaveTable"] = g.FactoryGameLogic.handleLeaveTableReq
 }
 func (g *GuessLogic) handleGuessReq(args []interface{}) {
 	a := args[1].(gate.Agent)
