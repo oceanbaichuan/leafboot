@@ -20,14 +20,15 @@ var (
 	ChanRedisInfo chan RedisInfo
 	ChanChildConf chan EtcdChildConfig
 	bInitialized  bool
-	SelfEtcdDir   = "ServerList/"
-	APPEtcdDir    = "APPCfgList/GameList/"
+	SelfEtcdDir   = "/ServerList/"
+	APPEtcdDir    = "/APPCfgList/GameList/"
 )
 
 //全平台统一，应用层无需修改
 const (
-	DBEtcdDir    = "DBConf/"
-	RedisEtcdDir = "RedisConf/"
+	GrayPathPrefix = "/GrayConf/"
+	DBEtcdDir      = "/DBConf/"
+	RedisEtcdDir   = "/RedisConf/"
 )
 
 type EtcdChildConfig struct {
@@ -46,8 +47,13 @@ func StartEtcd() {
 	//加载所需etcd配置
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", RedisEtcdDir))
-	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s/Level_%d/%s",
-		APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
+	if Server.IsGray == 1 {
+		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s%s/Level_%d/%s",
+			GrayPathPrefix, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
+	} else {
+		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s/Level_%d/%s",
+			APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
+	}
 
 	for _, v := range Server.EtcdKey {
 		cfgetcd := client.Config{
@@ -61,7 +67,8 @@ func StartEtcd() {
 			log.Error("err:%v", err)
 		}
 		gameAPI := client.NewKeysAPI(etcdClient)
-		resp, err := gameAPI.Get(context.Background(), Server.SysClusterName+"/"+v,
+		strPath := Server.SysClusterName + "/" + v
+		resp, err := gameAPI.Get(context.Background(), strPath,
 			&client.GetOptions{Recursive: true, Sort: false, Quorum: true})
 		if err != nil {
 			log.Error("err:%v", err)
@@ -69,7 +76,7 @@ func StartEtcd() {
 		if resp != nil && resp.Node != nil {
 			paraseEtcdNode(resp.Action, resp.Node)
 		}
-		go watchGateServer(Server.SysClusterName + "/" + v)
+		go watchGateServer(strPath)
 	}
 	//注册本节点信息到etcd中心
 	go registe2Etcd()
@@ -89,8 +96,15 @@ func writeRoomInfo2Etcd() {
 	}
 	gameAPI := client.NewKeysAPI(etcdClient)
 	roominfo, _ := json.Marshal(&RoomInfo)
-	_, err = gameAPI.Create(context.Background(), fmt.Sprintf("%s/%s%s/Level_%d/%s",
-		Server.SysClusterName, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
+	//灰度列表注册
+	if Server.IsGray == 1 {
+		_, err = gameAPI.Create(context.Background(), fmt.Sprintf("%s/%s%s%s/Level_%d/%s",
+			Server.SysClusterName, GrayPathPrefix, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
+	} else {
+		_, err = gameAPI.Create(context.Background(), fmt.Sprintf("%s/%s%s/Level_%d/%s",
+			Server.SysClusterName, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
+	}
+
 }
 func registe2Etcd() {
 	for {
