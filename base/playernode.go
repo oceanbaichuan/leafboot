@@ -51,8 +51,20 @@ type ProxyNode struct {
 	MapClient map[uint64]*ClientNode
 }
 
+//中台节点
+type MiddlePlatNode struct {
+	PlayerNode
+}
+
+func (player *MiddlePlatNode) IsMiddlePlatNode() bool {
+	return true
+}
+
 //IsProxyNode 本身是否为代理节点
 func (player *PlayerNode) IsProxyNode() bool {
+	return false
+}
+func (player *PlayerNode) IsMiddlePlatNode() bool {
 	return false
 }
 

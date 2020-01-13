@@ -3,6 +3,7 @@ package gamelogic
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 	"unsafe"
 
@@ -43,7 +44,7 @@ func (f *FactoryGameLogic) listenEtcdConf() {
 		select {
 		case roomFlag := <-conf.ChanRoomFlag:
 			{
-				for _, v := range mapConnServer {
+				for _, v := range mapFrontConnServer {
 					//注册本节点到connector
 					flagNotice := msg.RequestData{
 						Route: "Connector.GameFlag",
@@ -104,8 +105,10 @@ func (f *FactoryGameLogic) GetTable(tableid int32) (base.ITable, error) {
 	return f.GameTables[tableid-1], nil
 }
 func (f *FactoryGameLogic) OnCreatePlayer(addr string) base.IPlayerNode {
-	if _, ok := conf.MapConnServer[addr]; ok {
+	if _, ok := conf.MapFrontConnServer[addr]; ok {
 		return &base.ProxyNode{}
+	} else if _, ok := conf.MapMiddlePlatConnServer[addr]; ok {
+		return &base.MiddlePlatNode{}
 	} else {
 		return f.CreateClientPlayer()
 	}
@@ -118,8 +121,8 @@ func (f *FactoryGameLogic) CreateClientPlayer() base.IPlayerNode {
 func (f *FactoryGameLogic) OnPlayerConnect(player base.IPlayerNode) {
 	if player.IsProxyNode() {
 		playerNode := player.(*base.ProxyNode)
-		if k, ok := conf.MapConnServer[playerNode.Netagent.RemoteAddr().String()]; ok {
-			mapConnServer[k.LocalAddr] = playerNode
+		if k, ok := conf.MapFrontConnServer[playerNode.Netagent.RemoteAddr().String()]; ok {
+			mapFrontConnServer[k.LocalAddr] = playerNode
 			//注册本节点到connector
 			regReq := msg.RequestData{
 				Route: "Connector.GameRegiste",
@@ -133,10 +136,29 @@ func (f *FactoryGameLogic) OnPlayerConnect(player base.IPlayerNode) {
 			}
 			base.SendReqMsg(player, &regReq)
 		}
-		log.Debug("player: %s connected", playerNode.Netagent.RemoteAddr().String())
+		log.Debug("proxyplayer: %s connected", playerNode.Netagent.RemoteAddr().String())
+	} else if player.IsMiddlePlatNode() {
+		playerNode := player.(*base.MiddlePlatNode)
+		if k, ok := conf.MapMiddlePlatConnServer[playerNode.Netagent.RemoteAddr().String()]; ok {
+			mapMiddlePlatConnServer[k.LocalAddr] = playerNode
+			//注册本节点到connector
+			regReq := msg.RequestData{
+				Route: "Connector.GameRegiste",
+				ReqID: playerNode.PlayerID,
+				ReqData: &msg.GameRegistReq{
+					GameID:   conf.RoomInfo.GameID,
+					Addr:     conf.Server.TCPAddr,
+					NodeName: conf.Server.NodeName,
+					NodeID:   conf.Server.NodeID,
+					IsGray:   conf.Server.IsGray,
+				},
+			}
+			base.SendReqMsg(player, &regReq)
+		}
+		log.Debug("middleplayer: %s connected", playerNode.Netagent.RemoteAddr().String())
 	} else {
 		playerNode := player.(*base.ClientNode)
-		log.Debug("player: %s connected", playerNode.Netagent.RemoteAddr().String())
+		log.Debug("clientplayer: %s connected", playerNode.Netagent.RemoteAddr().String())
 
 	}
 }
@@ -158,7 +180,12 @@ func (f *FactoryGameLogic) OnPlayerClose(player base.IPlayerNode) {
 			delete(playernode.MapClient, key)
 			f.OnPlayerClose(v)
 		}
-		delete(mapConnServer, playernode.Netagent.RemoteAddr().String())
+		delete(mapFrontConnServer, playernode.Netagent.RemoteAddr().String())
+		playernode.Netagent = nil
+		return
+	} else if player.IsMiddlePlatNode() {
+		playernode := player.(*base.MiddlePlatNode)
+		delete(mapMiddlePlatConnServer, playernode.Netagent.RemoteAddr().String())
 		playernode.Netagent = nil
 		return
 	}
@@ -197,6 +224,32 @@ func (f *FactoryGameLogic) ClosePlayer(player base.IPlayerNode) {
 			playernode.Netagent.Close()
 		}
 	}
+}
+
+//SendMsg2Client 发送消息到客户端
+func (f *FactoryGameLogic) SendMsg2Client(playerNode base.IPlayerNode, clientmsg interface{}) error {
+	if !f.IsFrontend() {
+		for _, v := range mapMiddlePlatConnServer {
+			return base.SendRspMsg(v, clientmsg)
+		}
+	} else {
+		return base.SendRspMsg(playerNode, clientmsg)
+	}
+	return errors.New("no middleserver connection found")
+}
+
+//SendMsg2MiddlePlat 前台服务器与中台服务器之间通信
+func (f *FactoryGameLogic) SendMsg2MiddlePlat(userID int64, route string, middleMsg interface{}) error {
+	iConnNum := len(mapMiddlePlatConnServer)
+	iConnIndex := rand.Intn(iConnNum)
+	iConnNum = 0
+	for _, v := range mapMiddlePlatConnServer {
+		if iConnNum == iConnIndex {
+			return base.SendAutoReqMsg(v, route, uint64(userID), middleMsg)
+		}
+		iConnNum++
+	}
+	return errors.New("no middleserver connection found")
 }
 
 //GameStart 游戏对局开始处理，不要重写
@@ -375,5 +428,5 @@ func (f *FactoryGameLogic) OnDestroy() {
 
 //IsFrontend 是否是前端服务器
 func (f *FactoryGameLogic) IsFrontend() bool {
-	return true
+	return conf.FrontentNode
 }

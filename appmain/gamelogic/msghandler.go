@@ -16,13 +16,15 @@ import (
 )
 
 var (
-	mapReqHandler   map[string]base.MsgHandler
-	mapRobotHandler map[string]base.MsgHandler
-	mapConnServer   map[string]*base.ProxyNode
+	mapReqHandler           map[string]base.MsgHandler
+	mapRobotHandler         map[string]base.MsgHandler
+	mapFrontConnServer      map[string]*base.ProxyNode
+	mapMiddlePlatConnServer map[string]*base.MiddlePlatNode
 )
 
 func init() {
-	mapConnServer = make(map[string]*base.ProxyNode)
+	mapFrontConnServer = make(map[string]*base.ProxyNode)
+	mapMiddlePlatConnServer = make(map[string]*base.MiddlePlatNode)
 	mapReqHandler = make(map[string]base.MsgHandler)
 	mapRobotHandler = make(map[string]base.MsgHandler)
 

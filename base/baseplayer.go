@@ -28,6 +28,7 @@ type Userplaygamedata struct {
 type IPlayerNode interface {
 	Initialize()
 	IsProxyNode() bool
+	IsMiddlePlatNode() bool
 	IsProxyedNode() bool
 	Resetgamedata()
 	GameBegin()

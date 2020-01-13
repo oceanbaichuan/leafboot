@@ -12,23 +12,29 @@ import (
 	"go.etcd.io/etcd/client"
 )
 
-var (
-	MapConnServer map[string]ProxyNodeInfo
-	NewTCPAgent   func(*network.TCPConn) network.Agent
-	ChanRoomFlag  chan bool
-	ChanDataBase  chan DatabaseInfo
-	ChanRedisInfo chan RedisInfo
-	ChanChildConf chan EtcdChildConfig
-	bInitialized  bool
-	SelfEtcdDir   = "/ServerList/"
-	APPEtcdDir    = "/APPCfgList/GameList/"
-)
-
 //全平台统一，应用层无需修改
 const (
-	GrayPathPrefix = "/GrayConf/"
-	DBEtcdDir      = "/DBConf/"
-	RedisEtcdDir   = "/RedisConf/"
+	GrayPathPrefix   = "/GrayConf/"
+	DBEtcdDir        = "/DBConf/"
+	RedisEtcdDir     = "/RedisConf/"
+	FrontendDir      = "/Frontend/"   //前台目录
+	MiddlePlatDir    = "/MiddlePlat/" //中台目录
+	ServerEtcdDir    = "/ServerList/"
+	ConnectDir       = "/ConnectorServer/"
+	APPEtcdDir       = "/APPCfgList/GameList/"
+	FrontConnectDir  = ServerEtcdDir + FrontendDir + ConnectDir
+	MiddleConnectDir = ServerEtcdDir + MiddlePlatDir + ConnectDir
+)
+
+var (
+	MapFrontConnServer      map[string]ProxyNodeInfo
+	MapMiddlePlatConnServer map[string]ProxyNodeInfo
+	NewTCPAgent             func(*network.TCPConn) network.Agent
+	ChanRoomFlag            chan bool
+	ChanDataBase            chan DatabaseInfo
+	ChanRedisInfo           chan RedisInfo
+	ChanChildConf           chan EtcdChildConfig
+	bInitialized            bool
 )
 
 type EtcdChildConfig struct {
@@ -38,13 +44,20 @@ type EtcdChildConfig struct {
 }
 
 func StartEtcd() {
-	MapConnServer = make(map[string]ProxyNodeInfo)
+	MapFrontConnServer = make(map[string]ProxyNodeInfo)
+	MapMiddlePlatConnServer = make(map[string]ProxyNodeInfo)
 	ChanRoomFlag = make(chan bool, 1)
 	ChanDataBase = make(chan DatabaseInfo, 100)
 	ChanRedisInfo = make(chan RedisInfo, 100)
 	ChanChildConf = make(chan EtcdChildConfig, 1000)
 	writeRoomInfo2Etcd()
 	//加载所需etcd配置
+	if FrontentNode {
+		Server.EtcdKey = append(Server.EtcdKey, FrontConnectDir)
+	}
+	if MiddlePlatNeed {
+		Server.EtcdKey = append(Server.EtcdKey, MiddleConnectDir)
+	}
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", RedisEtcdDir))
 	if Server.IsGray == 1 {
@@ -123,7 +136,7 @@ func registe2Etcd() {
 		strNode, _ := json.Marshal(&Server2Etcd.value)
 		strValue := string(strNode[:])
 		_, err = gameAPI.Set(context.Background(), fmt.Sprintf("%s/%s%s/Level_%d/%s",
-			Server.SysClusterName, SelfEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), strValue,
+			Server.SysClusterName, ServerEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), strValue,
 			&client.SetOptions{TTL: 10 * time.Second})
 		if err != nil {
 			log.Error("err:%v", err)
@@ -149,21 +162,40 @@ func jsonConf2Struct(action string, key string, value string) {
 		json.Unmarshal([]byte(value), &nodeinfo)
 		//如果是新增或者初次加载时，建立连接
 		if action == "get" || action == "set" {
-			if _, ok := MapConnServer[nodeinfo.LocalAddr]; !ok {
-				MapConnServer[nodeinfo.LocalAddr] = nodeinfo
-				ClientManager := &network.TCPClient{
-					Addr:            nodeinfo.LocalAddr,
-					ConnNum:         1,
-					LittleEndian:    LittleEndian,
-					PendingWriteNum: PendingWriteNum,
-					AutoReconnect:   true,
-					LenMsgLen:       LenMsgLen,
-					MinMsgLen:       0,
-					MaxMsgLen:       MaxMsgLen,
-					NewAgent:        NewTCPAgent,
+			if strings.Contains(key, FrontendDir) {
+				if _, ok := MapFrontConnServer[nodeinfo.LocalAddr]; !ok {
+					MapFrontConnServer[nodeinfo.LocalAddr] = nodeinfo
+					ClientManager := &network.TCPClient{
+						Addr:            nodeinfo.LocalAddr,
+						ConnNum:         1,
+						LittleEndian:    LittleEndian,
+						PendingWriteNum: PendingWriteNum,
+						AutoReconnect:   true,
+						LenMsgLen:       LenMsgLen,
+						MinMsgLen:       0,
+						MaxMsgLen:       MaxMsgLen,
+						NewAgent:        NewTCPAgent,
+					}
+					ClientManager.Start()
 				}
-				ClientManager.Start()
+			} else {
+				if _, ok := MapMiddlePlatConnServer[nodeinfo.LocalAddr]; !ok {
+					MapMiddlePlatConnServer[nodeinfo.LocalAddr] = nodeinfo
+					ClientManager := &network.TCPClient{
+						Addr:            nodeinfo.LocalAddr,
+						ConnNum:         1,
+						LittleEndian:    LittleEndian,
+						PendingWriteNum: PendingWriteNum,
+						AutoReconnect:   true,
+						LenMsgLen:       LenMsgLen,
+						MinMsgLen:       0,
+						MaxMsgLen:       MaxMsgLen,
+						NewAgent:        NewTCPAgent,
+					}
+					ClientManager.Start()
+				}
 			}
+
 		}
 	} else if strings.Contains(key, "APPCfgList/GameList") {
 		roominfo := RoomInfoDef{}
@@ -206,9 +238,11 @@ func jsonConf2Struct(action string, key string, value string) {
 				break
 			}
 		}
+		Server.CustomDBName[dbinfo.DataBase] = true
 		//无则创建,通知db
 		if bInitialized {
 			if !bHas {
+
 				ChanDataBase <- dbinfo
 			}
 		} else {
@@ -229,6 +263,7 @@ func jsonConf2Struct(action string, key string, value string) {
 				break
 			}
 		}
+		Server.CustomDBName[dbinfo.RedisName] = true
 		//无则创建,通知db
 		if bInitialized {
 			if !bHas {

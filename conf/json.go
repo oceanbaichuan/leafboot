@@ -31,6 +31,7 @@ var Server struct {
 	NodeName           string //gamename_gameid_roomlevel
 	NodeID             string //pcid_roomserialid
 	CfgDir             string
+	CustomDBName       map[string]bool //除平台公共库，自定义数据存储库名
 	//平台库
 	DbList []DatabaseInfo
 	//redis 列表
@@ -92,6 +93,8 @@ type ProxyNodeInfo struct {
 }
 
 type RoomInfoDef struct {
+	NodeName             string //gamename_gameid_roomlevel
+	NodeID               string //pcid_roomserialid
 	GameID               int32
 	RoomLevel            int32
 	MaxTableNum          int32 //最大桌子数
@@ -123,6 +126,7 @@ func init() {
 	if err != nil {
 		log.Fatal("%v", err)
 	}
+	Server.CustomDBName = make(map[string]bool)
 	err = json.Unmarshal(data, &Server)
 	if err != nil {
 		log.Fatal("%v", err)
@@ -140,12 +144,21 @@ func init() {
 	if err != nil {
 		log.Fatal("%v", err)
 	}
+	//解析数据库名称列表
+	for _, v := range Server.DbList {
+		Server.CustomDBName[v.DataBase] = true
+	}
+	for _, v := range Server.RedisList {
+		Server.CustomDBName[v.RedisName] = true
+	}
 	roomflags := strings.Split(Server.NodeName, "_")
 	Server.CfgDir = strings.Join(roomflags[:2], "_")
 	gameID, err := strconv.Atoi(roomflags[1])
 	if err != nil {
 		log.Fatal("%v", err)
 	}
+	RoomInfo.NodeName = Server.NodeName
+	RoomInfo.NodeID = Server.NodeID
 	RoomInfo.GameID = int32(gameID)
 	roomLevel, err := strconv.Atoi(roomflags[2])
 	if err != nil {

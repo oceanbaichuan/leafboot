@@ -22,4 +22,8 @@ var (
 	AsynCallLen        = 10000
 	ChanRPCLen         = 10000
 	ConsolePort        = 3657
+	//标记是否为前台服务节点
+	FrontentNode = true
+	//是否需要连接中台,需要用到中台公共服时为true
+	MiddlePlatNeed = true
 )

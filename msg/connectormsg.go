@@ -1,6 +1,7 @@
 package msg
 
 type GameRegistReq struct {
+	GameID   int32
 	Addr     string
 	NodeID   string //服务器节点描述
 	NodeName string //服务器类型 例如:"login", "xzmj"
