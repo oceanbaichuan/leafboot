@@ -38,7 +38,7 @@ func StartRedis() {
 	}
 }
 func OpenRedisGroup(dbinfo conf.RedisInfo) error {
-	if _, ok := conf.Server.CustomDBName[dbinfo.RedisName]; !ok {
+	if _, ok := conf.Server.MapDBName[dbinfo.RedisName]; !ok {
 		log.Error("OpenRedisGroup RedisName:%s not supported", dbinfo.RedisName)
 		return nil
 	}

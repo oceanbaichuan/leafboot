@@ -31,7 +31,8 @@ var Server struct {
 	NodeName           string //gamename_gameid_roomlevel
 	NodeID             string //pcid_roomserialid
 	CfgDir             string
-	CustomDBName       map[string]bool //除平台公共库，自定义数据存储库名
+	CustomDBName       []string        //除平台公共库，自定义数据存储库名
+	MapDBName          map[string]bool //除平台公共库，自定义数据存储库名
 	//平台库
 	DbList []DatabaseInfo
 	//redis 列表
@@ -126,7 +127,7 @@ func init() {
 	if err != nil {
 		log.Fatal("%v", err)
 	}
-	Server.CustomDBName = make(map[string]bool)
+	Server.MapDBName = make(map[string]bool)
 	err = json.Unmarshal(data, &Server)
 	if err != nil {
 		log.Fatal("%v", err)
@@ -146,10 +147,13 @@ func init() {
 	}
 	//解析数据库名称列表
 	for _, v := range Server.DbList {
-		Server.CustomDBName[v.DataBase] = true
+		Server.MapDBName[v.DataBase] = true
 	}
 	for _, v := range Server.RedisList {
-		Server.CustomDBName[v.RedisName] = true
+		Server.MapDBName[v.RedisName] = true
+	}
+	for _, v := range Server.CustomDBName {
+		Server.MapDBName[v] = true
 	}
 	roomflags := strings.Split(Server.NodeName, "_")
 	Server.CfgDir = strings.Join(roomflags[:2], "_")

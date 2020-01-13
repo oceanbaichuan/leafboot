@@ -238,7 +238,7 @@ func jsonConf2Struct(action string, key string, value string) {
 				break
 			}
 		}
-		Server.CustomDBName[dbinfo.DataBase] = true
+		Server.MapDBName[dbinfo.DataBase] = true
 		//无则创建,通知db
 		if bInitialized {
 			if !bHas {
@@ -263,7 +263,7 @@ func jsonConf2Struct(action string, key string, value string) {
 				break
 			}
 		}
-		Server.CustomDBName[dbinfo.RedisName] = true
+		Server.MapDBName[dbinfo.RedisName] = true
 		//无则创建,通知db
 		if bInitialized {
 			if !bHas {

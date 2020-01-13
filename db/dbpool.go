@@ -44,7 +44,7 @@ func StartDB() error {
 }
 func OpenDBGroup(dbinfo conf.DatabaseInfo) error {
 	//M读写库
-	if _, ok := conf.Server.CustomDBName[dbinfo.DataBase]; !ok {
+	if _, ok := conf.Server.MapDBName[dbinfo.DataBase]; !ok {
 		log.Error("OpenDBGroup database:%s not supported", dbinfo.DataBase)
 		return nil
 	}

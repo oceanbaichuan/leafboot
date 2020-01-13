@@ -26,12 +26,14 @@ type FactoryGameLogic struct {
 func (f *FactoryGameLogic) keepAlive() {
 	for {
 		for _, v := range base.PlayerList.GetAllPlayers() {
-			playerNode := v.(*base.ClientNode)
-			//前端逻辑服器,5分钟更新一次token
-			if f.IsFrontend() && time.Now().Unix()-playerNode.LastUpateTokenTime.Unix() >= 300 {
-				log.Debug("player:%v updatetoken", playerNode.Usernodeinfo.Userid)
-				db.UpdateATokenTTF(playerNode.Usernodeinfo.Userid)
-				playerNode.LastUpateTokenTime = time.Now()
+			if v != nil {
+				playerNode := v.(*base.ClientNode)
+				//前端逻辑服器,5分钟更新一次token
+				if f.IsFrontend() && time.Now().Unix()-playerNode.LastUpateTokenTime.Unix() >= 300 {
+					log.Debug("player:%v updatetoken", playerNode.Usernodeinfo.Userid)
+					db.UpdateATokenTTF(playerNode.Usernodeinfo.Userid)
+					playerNode.LastUpateTokenTime = time.Now()
+				}
 			}
 		}
 		time.Sleep(10 * time.Second)
