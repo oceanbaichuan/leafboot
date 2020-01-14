@@ -156,19 +156,27 @@ func init() {
 		Server.MapDBName[v] = true
 	}
 	roomflags := strings.Split(Server.NodeName, "_")
-	Server.CfgDir = strings.Join(roomflags[:2], "_")
-	gameID, err := strconv.Atoi(roomflags[1])
-	if err != nil {
-		log.Fatal("%v", err)
+	if len(roomflags) <= 2 {
+		Server.CfgDir = Server.NodeName
+	} else {
+		Server.CfgDir = strings.Join(roomflags[:2], "_")
+	}
+	if len(roomflags) > 1 {
+		gameID, err := strconv.Atoi(roomflags[1])
+		if err != nil {
+			log.Fatal("%v", err)
+		}
+		RoomInfo.GameID = int32(gameID)
+	}
+	if len(roomflags) > 2 {
+		roomLevel, err := strconv.Atoi(roomflags[2])
+		if err != nil {
+			log.Fatal("%v", err)
+		}
+		RoomInfo.RoomLevel = int32(roomLevel)
 	}
 	RoomInfo.NodeName = Server.NodeName
 	RoomInfo.NodeID = Server.NodeID
-	RoomInfo.GameID = int32(gameID)
-	roomLevel, err := strconv.Atoi(roomflags[2])
-	if err != nil {
-		log.Fatal("%v", err)
-	}
-	RoomInfo.RoomLevel = int32(roomLevel)
 	nodeinfo := Node2EtcdInfo{}
 	nodeinfo.CertFile = Server.CertFile
 	nodeinfo.KeyFile = Server.KeyFile

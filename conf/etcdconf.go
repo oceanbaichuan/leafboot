@@ -21,12 +21,12 @@ const (
 	MiddlePlatDir    = "/MiddlePlat/" //中台目录
 	ServerEtcdDir    = "/ServerList/"
 	ConnectDir       = "/ConnectorServer/"
-	APPEtcdDir       = "/APPCfgList/GameList/"
 	FrontConnectDir  = ServerEtcdDir + FrontendDir + ConnectDir
 	MiddleConnectDir = ServerEtcdDir + MiddlePlatDir + ConnectDir
 )
 
 var (
+	APPEtcdDir              = "/APPCfgList/GameList/"
 	MapFrontConnServer      map[string]ProxyNodeInfo
 	MapMiddlePlatConnServer map[string]ProxyNodeInfo
 	NewTCPAgent             func(*network.TCPConn) network.Agent
@@ -42,6 +42,8 @@ type EtcdChildConfig struct {
 	Key    string
 	Value  string
 }
+
+var roomInfoKey = ""
 
 func StartEtcd() {
 	MapFrontConnServer = make(map[string]ProxyNodeInfo)
@@ -61,11 +63,15 @@ func StartEtcd() {
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", RedisEtcdDir))
 	if Server.IsGray == 1 {
-		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s%s/Level_%d/%s",
-			GrayPathPrefix, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
+		roomInfoKey = fmt.Sprintf("%s%s%s/Level_%d/%s",
+			GrayPathPrefix, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
+		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s%s",
+			GrayPathPrefix, APPEtcdDir, Server.CfgDir))
 	} else {
-		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s/Level_%d/%s",
-			APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key))
+		roomInfoKey = fmt.Sprintf("%s%s/Level_%d/%s",
+			APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
+		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s",
+			APPEtcdDir, Server.CfgDir))
 	}
 
 	for _, v := range Server.EtcdKey {
@@ -111,11 +117,9 @@ func writeRoomInfo2Etcd() {
 	roominfo, _ := json.Marshal(&RoomInfo)
 	//灰度列表注册
 	if Server.IsGray == 1 {
-		_, err = gameAPI.Create(context.Background(), fmt.Sprintf("%s/%s%s%s/Level_%d/%s",
-			Server.SysClusterName, GrayPathPrefix, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
+		_, err = gameAPI.Create(context.Background(), roomInfoKey, string(roominfo))
 	} else {
-		_, err = gameAPI.Create(context.Background(), fmt.Sprintf("%s/%s%s/Level_%d/%s",
-			Server.SysClusterName, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key), string(roominfo))
+		_, err = gameAPI.Create(context.Background(), roomInfoKey, string(roominfo))
 	}
 
 }
@@ -197,7 +201,7 @@ func jsonConf2Struct(action string, key string, value string) {
 			}
 
 		}
-	} else if strings.Contains(key, "APPCfgList/GameList") {
+	} else if key == roomInfoKey {
 		roominfo := RoomInfoDef{}
 		json.Unmarshal([]byte(value), &roominfo)
 		RoomInfo.BasePoint = roominfo.BasePoint

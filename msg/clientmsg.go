@@ -2,15 +2,24 @@ package msg
 
 import "time"
 
-//EnterScenceReq 进入业务服
+//EnterScenceReq 进入业务服,各业务可自由筛选字段但结构名不能变
 type EnterScenceReq struct {
-	Account string //账号
-	Passwd  string //密码
-	Token   string //token
-	UserID  int64  //用户ID
-	AppID   string //产品ID
-	MacID   string //机器码
-	LoginIP string //登录IP
+	Account     string //账号
+	Passwd      string //密码
+	Token       string //token
+	UserID      int64  //用户ID
+	AppID       string //产品ID
+	MacID       string //机器码
+	OsType      int8   //1:pc 2:Android 3:IOS
+	LoginIP     string //登录IP
+	OpenID      string //第三方OpenID
+	UnionID     string //第三方UnionID
+	LoginMethod int8   //第三方登录方式 1，2,3……
+	ChannelID   int32  //短渠道号
+	LongChannel string //长渠道号
+	BigVer      string //大版本号
+	SmallVer    string //小版本号
+	UserSource  string //用户来源,例如同1个渠道不同的位置
 }
 
 //LeaveSceneReq 进入业务服
