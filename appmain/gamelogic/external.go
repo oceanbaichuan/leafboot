@@ -61,8 +61,7 @@ func (f *FactoryGameLogic) listenEtcdConf() {
 			}
 		case etcdconf := <-conf.ChanChildConf:
 			{
-				log.Debug("aaaaaaaaaa")
-				f.CallBackEtcdConf(etcdconf.Action, etcdconf.Key, etcdconf.Value)
+				f.AppLogic.CallBackEtcdConf(etcdconf.Action, etcdconf.Key, etcdconf.Value)
 			}
 		case dbinfo := <-conf.ChanDataBase:
 			{
