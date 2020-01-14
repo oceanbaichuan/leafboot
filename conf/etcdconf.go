@@ -21,12 +21,12 @@ const (
 	MiddlePlatDir    = "/MiddlePlat/" //中台目录
 	ServerEtcdDir    = "/ServerList/"
 	ConnectDir       = "/ConnectorServer/"
+	APPEtcdDir       = "/APPCfgList/"
 	FrontConnectDir  = ServerEtcdDir + FrontendDir + ConnectDir
 	MiddleConnectDir = ServerEtcdDir + MiddlePlatDir + ConnectDir
 )
 
 var (
-	APPEtcdDir              = "/APPCfgList/GameList/"
 	MapFrontConnServer      map[string]ProxyNodeInfo
 	MapMiddlePlatConnServer map[string]ProxyNodeInfo
 	NewTCPAgent             func(*network.TCPConn) network.Agent
@@ -52,7 +52,6 @@ func StartEtcd() {
 	ChanDataBase = make(chan DatabaseInfo, 100)
 	ChanRedisInfo = make(chan RedisInfo, 100)
 	ChanChildConf = make(chan EtcdChildConfig, 1000)
-	writeRoomInfo2Etcd()
 	//加载所需etcd配置
 	if FrontentNode {
 		Server.EtcdKey = append(Server.EtcdKey, FrontConnectDir)
@@ -63,17 +62,30 @@ func StartEtcd() {
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", RedisEtcdDir))
 	if Server.IsGray == 1 {
-		roomInfoKey = fmt.Sprintf("%s%s%s/Level_%d/%s",
-			GrayPathPrefix, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
-		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s%s",
-			GrayPathPrefix, APPEtcdDir, Server.CfgDir))
+		if RoomInfo.GameID > 0 {
+			roomInfoKey = Server.SysClusterName + "/" + fmt.Sprintf("%s%sGameList/%s/Level_%d/%s",
+				GrayPathPrefix, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
+			Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%ssGameList/%s",
+				GrayPathPrefix, APPEtcdDir, Server.CfgDir))
+		} else {
+			roomInfoKey = Server.SysClusterName + "/" + fmt.Sprintf("%s%s%s/%s", GrayPathPrefix, APPEtcdDir, Server.CfgDir, Server2Etcd.key)
+			Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s%s",
+				GrayPathPrefix, APPEtcdDir, Server.CfgDir))
+		}
 	} else {
-		roomInfoKey = fmt.Sprintf("%s%s/Level_%d/%s",
-			APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
-		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s",
-			APPEtcdDir, Server.CfgDir))
-	}
+		if RoomInfo.GameID > 0 {
+			roomInfoKey = Server.SysClusterName + "/" + fmt.Sprintf("%sGameList/%s/Level_%d/%s",
+				APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
+			Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%sGameList/%s",
+				APPEtcdDir, Server.CfgDir))
+		} else {
+			roomInfoKey = Server.SysClusterName + "/" + fmt.Sprintf("%s%s/%s", APPEtcdDir, Server.CfgDir, Server2Etcd.key)
+			Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s",
+				APPEtcdDir, Server.CfgDir))
+		}
 
+	}
+	writeRoomInfo2Etcd()
 	for _, v := range Server.EtcdKey {
 		cfgetcd := client.Config{
 			Endpoints: []string{Server.EtcdAddr},
@@ -113,15 +125,11 @@ func writeRoomInfo2Etcd() {
 	if err != nil {
 		log.Error("err:%v", err)
 	}
+	fmt.Printf("roomInfoKey:%s\n", roomInfoKey)
 	gameAPI := client.NewKeysAPI(etcdClient)
 	roominfo, _ := json.Marshal(&RoomInfo)
 	//灰度列表注册
-	if Server.IsGray == 1 {
-		_, err = gameAPI.Create(context.Background(), roomInfoKey, string(roominfo))
-	} else {
-		_, err = gameAPI.Create(context.Background(), roomInfoKey, string(roominfo))
-	}
-
+	_, err = gameAPI.Create(context.Background(), roomInfoKey, string(roominfo))
 }
 func registe2Etcd() {
 	for {
