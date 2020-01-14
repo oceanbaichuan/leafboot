@@ -45,7 +45,7 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 	bFromLoginSer := strings.Contains(datareq.LoginRoute, "Login")
 	if acResult, err := myredis.SelectAccount(accountdbName, datareq); err != nil {
 		//如果是登录服加载
-		if bFromLoginSer {
+		if datareq.Userid <= 0 {
 			row := dbrconn.Where("account = ? and passwd = ?", datareq.Account, datareq.Passwd).Find(&accountInfo)
 			if row.RowsAffected < 1 {
 				account.Errcode = msg.LoginErr_nouser

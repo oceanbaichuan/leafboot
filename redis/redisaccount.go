@@ -28,9 +28,10 @@ func SelectAccount(redisName string, datareq *msg.Accountrdatareq) ([]interface{
 		return nil, err
 	}
 	//判断token是否有效
-	bLoginServer := strings.Contains(datareq.LoginRoute, "Login")
+	//bLoginServer := strings.Contains(datareq.LoginRoute, "Login")
 	bHasToken := false
-	if !bLoginServer {
+	//首先检验token
+	if datareq.Userid > 0 {
 		accvalue, err := rdconn.Get(fmt.Sprintf(ACCOUNT_TOKEN_KEY, datareq.Userid)).Result()
 		if err == nil {
 			if accvalue != datareq.Token {
