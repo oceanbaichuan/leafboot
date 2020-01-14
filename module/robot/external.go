@@ -12,4 +12,7 @@ var (
 
 func InitLogic(flogic base.IRobot) {
 	internal.RobotLogic = flogic
+	if flogic != nil {
+		internal.RobotLogic.InitAppMain(flogic)
+	}
 }

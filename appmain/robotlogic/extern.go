@@ -11,6 +11,7 @@ import (
 )
 
 type RobotLogic struct {
+	AppLogic      base.IRobot
 	MapReqHandler map[string]base.RobotHandler
 	freeRobotList []*RobotNode
 	workingRobot  map[int64]*RobotNode
@@ -42,8 +43,16 @@ func (f *RobotLogic) HandleRobotMsg(args []interface{}) {
 		log.Error("route:%s not found", msg.Route)
 	}
 }
+func (f *RobotLogic) InitAppMain(logic base.IRobot) {
+	f.AppLogic = logic
+}
 func (f *RobotLogic) OnCreateRobot() base.IPlayerNode {
+	robot := &RobotNode{}
+	f.AppLogic.CallBackCreateRobot(robot)
 	return &RobotNode{}
+}
+func (f *RobotLogic) CallBackCreateRobot(player base.IPlayerNode) {
+	player.SetUserData(nil)
 }
 func (f *RobotLogic) RegisteRobotMsg() {
 	f.MapReqHandler = make(map[string]base.RobotHandler)

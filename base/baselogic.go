@@ -144,6 +144,7 @@ type IGameLogic interface {
 }
 
 type IRobot interface {
+	InitAppMain(appMain IRobot)
 	HandleRobotMsg(args []interface{})
 	OnCreateRobot() IPlayerNode
 	RegisteRobotMsg()
@@ -151,6 +152,9 @@ type IRobot interface {
 	OnRobotLoginOut(player IPlayerNode)
 	CloseRobot(player IPlayerNode)
 	OnDestroy()
+
+	//业务层重写
+	CallBackCreateRobot(IPlayerNode)
 }
 
 //app层逻辑接口
