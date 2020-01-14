@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -46,10 +47,15 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 	if acResult, err := myredis.SelectAccount(accountdbName, datareq); err != nil {
 		//如果是登录服加载
 		if datareq.Userid <= 0 {
-			row := dbrconn.Where("account = ? and passwd = ?", datareq.Account, datareq.Passwd).Find(&accountInfo)
+			row := dbrconn.Where("account = ? and passwd = ?", datareq.Account).Find(&accountInfo)
 			if row.RowsAffected < 1 {
 				account.Errcode = msg.LoginErr_nouser
 				return row.Error
+			}
+			if datareq.Passwd != accountInfo.Passwd {
+				account.Errcode = msg.LoginErr_wrongpasswd
+				log.Error("db account:%s wrong password clientpasswd:%s real:%s", datareq.Account, datareq.Passwd, accountInfo.Passwd)
+				return errors.New("wrong password")
 			}
 			if accountInfo.AccountStatus == 0 {
 				account.Errcode = msg.LoginErr_accountforbidden
@@ -57,10 +63,15 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 			}
 			datareq.Userid = accountInfo.UserID
 		} else {
-			row := dbrconn.Where("user_id = ? and passwd = ?", datareq.Userid, datareq.Passwd).Find(&accountInfo)
+			row := dbrconn.Where("user_id = ?", datareq.Userid).Find(&accountInfo)
 			if row.RowsAffected < 1 {
 				account.Errcode = msg.LoginErr_nouser
 				return row.Error
+			}
+			if datareq.Passwd != accountInfo.Passwd {
+				account.Errcode = msg.LoginErr_wrongpasswd
+				log.Error("db user_id:%d wrong password clientpasswd:%s real:%s", datareq.Userid, datareq.Passwd, accountInfo.Passwd)
+				return errors.New("wrong password")
 			}
 			if accountInfo.AccountStatus == 0 {
 				account.Errcode = msg.LoginErr_accountforbidden

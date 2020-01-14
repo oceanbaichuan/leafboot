@@ -43,6 +43,7 @@ const (
 	LoginErr_gamecoin_notenough
 	LoginErr_gamecoin_toomuch
 	LoginErr_accountforbidden
+	LoginErr_wrongpasswd
 )
 
 // type Logingamereq struct {

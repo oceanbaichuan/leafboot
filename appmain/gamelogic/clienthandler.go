@@ -181,7 +181,7 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 	}
 	if dbloginres.IsValid == 0 {
 		clientLoginRsp.ErrCode = msg.LoginErr_accountforbidden
-		base.SendRspMsg(succplayer, clientLoginRsp)
+		base.SendFailMsg(succplayer, 405, "account is forbbiden", clientLoginRsp)
 		log.Error("userid:%v IsInValid", dbloginres.Userid)
 		f.ClosePlayer(succplayer)
 		return
