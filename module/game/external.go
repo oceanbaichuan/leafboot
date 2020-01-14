@@ -14,6 +14,7 @@ var (
 
 func InitLogic(f base.IGameLogic) {
 	internal.GameLogic = f
+	internal.GameLogic.InitAppMain(f)
 }
 func Start(gate *gate.Gate) error {
 	return internal.GameLogic.Start(gate)

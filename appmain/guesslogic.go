@@ -6,6 +6,7 @@ import (
 	"github.com/hudgit2019/leafboot/msg"
 
 	"github.com/name5566/leaf/gate"
+	"github.com/name5566/leaf/log"
 )
 
 /*主玩法逻辑示例*/
@@ -22,8 +23,14 @@ type GuessLogic struct {
 	gamelogic.FactoryGameLogic
 }
 
-func (g *GuessLogic) CreateClientPlayer() base.IPlayerNode {
-	return &GuessPlayerNode{}
+func (g *GuessLogic) CreateClientPlayer(player base.IPlayerNode) {
+	log.Debug("Creating client player")
+	player.SetUserData(&GuessPlayerNode{})
+}
+
+//用来设置上层业务桌子数据
+func (g *GuessLogic) CreateTable(table base.ITable) {
+	table.SetCustomData(&GuessTable{})
 }
 
 //AppMsgCallBack 应用层用来注册消息回调，重写方法,例如:mapMsg["LeaveTable"]= f.handleLeaveTableReq
@@ -32,7 +39,7 @@ func (g *GuessLogic) AppMsgCallBackInit(mapMsg map[string]base.MsgHandler) {
 }
 func (g *GuessLogic) handleGuessReq(args []interface{}) {
 	a := args[1].(gate.Agent)
-	player := a.UserData().(*GuessPlayerNode)
+	player := a.UserData().(*base.ClientNode)
 	if player.Usergamestatus != PlayerstatuThinking {
 		return
 	}
@@ -54,7 +61,7 @@ func (g *GuessLogic) handleGuessReq(args []interface{}) {
 		return
 	}
 	player.Usergamestatus = PlayerstatuWaitOtherGuess
-	player.Guesstype = req.Guesstype
+	player.UserData().(*GuessPlayerNode).Guesstype = req.Guesstype
 	player.KillTimer(base.Playertimer_checkplay)
 	gussres := GuessRes{
 		Guesstype: req.Guesstype,
@@ -77,7 +84,7 @@ func (g *GuessLogic) handleGuessReq(args []interface{}) {
 			g.SavePlayerProp(v, msg.UserPropChange{}, 113)
 			g.SavePlayerGameEnd(v, base.Userplaygamedata{})
 			g.WriteTableRoundLog(&msg.Playgamelog{})
-			gussresult.Guesstype[i] = v.(*GuessPlayerNode).Guesstype
+			gussresult.Guesstype[i] = v.(*base.ClientNode).UserData().(*GuessPlayerNode).Guesstype
 			gussresult.Socres[i] = 1000
 		}
 

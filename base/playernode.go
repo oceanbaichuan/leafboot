@@ -23,8 +23,10 @@ type PlayerNode struct {
 	Netagent    gate.Agent           //socket链接点
 	Usertimemap map[int]*timer.Timer //定时器
 	PlayerID    uint64               //节点序列号
+	userData    interface{}
 }
 type ClientNode struct {
+	This IPlayerNode //业务层对象
 	PlayerNode
 	Usernodeinfo          msg.LoginRes
 	Useraccountdbw        Userplaygamedata //可更新入用户库数据
@@ -58,6 +60,12 @@ type MiddlePlatNode struct {
 
 func (player *MiddlePlatNode) IsMiddlePlatNode() bool {
 	return true
+}
+func (player *PlayerNode) SetUserData(data interface{}) {
+	player.userData = data
+}
+func (player *PlayerNode) UserData() interface{} {
+	return player.userData
 }
 
 //IsProxyNode 本身是否为代理节点

@@ -102,9 +102,9 @@ func ClosePlayer(player IPlayerNode) {
 // 	}
 // 	return nil
 // }
-
 type IGameLogic interface {
 	//可重写频率低接口
+	InitAppMain(appMain IGameLogic)
 	Start(netgate *gate.Gate) error
 	Gamestart(table ITable)
 	OnCreateTable() ITable
@@ -125,6 +125,11 @@ type IGameLogic interface {
 	WriteAttributionLog(attrlog interface{})
 
 	//可大量重写接口
+	SyncOldPlayerData(oldplayer IPlayerNode, newplayer IPlayerNode)
+	CreateClientPlayer(IPlayerNode) //用来设置上层业务用户数据
+	CreateTable(ITable)             //用来设置上层业务桌子数据
+	AppMsgCallBackInit(map[string]MsgHandler)
+	CallBackEtcdConf(action string, key string, value string)
 	CallBackSendRoomInfo(player IPlayerNode)
 	CallBackSitDown(player IPlayerNode, table ITable)
 	CallLoginSuccess(player IPlayerNode)
@@ -139,6 +144,41 @@ type IGameLogic interface {
 }
 
 type IRobot interface {
+	HandleRobotMsg(args []interface{})
+	OnCreateRobot() IPlayerNode
+	RegisteRobotMsg()
+	OnRobotLoginIn(player IPlayerNode, loginmsg interface{})
+	OnRobotLoginOut(player IPlayerNode)
+	CloseRobot(player IPlayerNode)
+	OnDestroy()
+}
+
+//app层逻辑接口
+type IAppMain interface {
+	InitEngine(logicEngine IGameLogic)
+	CreateClientPlayer() IPlayerNode
+	OnCreateTable() ITable
+	GameStart(table ITable)
+	OnPlayerConnect(player IPlayerNode)
+	OnPlayerClose(player IPlayerNode)
+	//可大量重写接口
+	AppMsgCallBackInit(map[string]MsgHandler)
+	CallBackEtcdConf(action string, key string, value string)
+	CallBackSendRoomInfo(player IPlayerNode)
+	CallBackSitDown(player IPlayerNode, table ITable)
+	CallLoginSuccess(player IPlayerNode)
+	CallBackLeaveTable(player IPlayerNode, table ITable)
+	CallBackOffline(player IPlayerNode)
+	CallBackLogOut(player IPlayerNode)
+	CallBackHandUp(player IPlayerNode, table ITable)
+	CallBackGameStart(table ITable)
+	CallBackLoginAgain(player IPlayerNode)
+	AutoPlay(player IPlayerNode)
+	OnDestroy()
+}
+
+//app层机器人接口
+type IAppRobot interface {
 	HandleRobotMsg(args []interface{})
 	OnCreateRobot() IPlayerNode
 	RegisteRobotMsg()

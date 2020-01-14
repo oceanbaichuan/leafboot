@@ -18,7 +18,8 @@ type TableTimer struct {
 	d time.Duration
 }
 type GameTable struct {
-	GameRoundNum   int64 //游戏对局编号
+	customData     interface{} //业务层对象
+	GameRoundNum   int64       //游戏对局编号
 	SitdownPlayers int32
 	ReadyPlayers   int32
 	TimeGameBegin  time.Time
@@ -32,6 +33,12 @@ type GameTable struct {
 	gameLogic      IGameLogic
 }
 
+func (table *GameTable) SetCustomData(data interface{}) {
+	table.customData = data
+}
+func (table *GameTable) CustomData() interface{} {
+	return table.customData
+}
 func (table *GameTable) Init(tableid int32, chairnum int32, flogic IGameLogic) {
 	table.TablePlayers = make([]IPlayerNode, chairnum)
 	for j := 0; j < int(chairnum); j++ {
@@ -71,6 +78,7 @@ func (table *GameTable) ResetTable() {
 func (table *GameTable) ResetGameTable() {
 
 }
+
 func (table *GameTable) OnTimerCheckBegin() {
 	if table.ReadyPlayers >= conf.RoomInfo.GameStartPlayer {
 		table.gameLogic.Gamestart(table)

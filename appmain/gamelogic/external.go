@@ -18,6 +18,7 @@ import (
 )
 
 type FactoryGameLogic struct {
+	AppLogic      base.IGameLogic
 	Curgamenum    int64 //当前牌局计数，初始化为时间戳
 	GameTables    []base.ITable
 	MapLevelTable map[int32][]base.ITable
@@ -60,6 +61,7 @@ func (f *FactoryGameLogic) listenEtcdConf() {
 			}
 		case etcdconf := <-conf.ChanChildConf:
 			{
+				log.Debug("aaaaaaaaaa")
 				f.CallBackEtcdConf(etcdconf.Action, etcdconf.Key, etcdconf.Value)
 			}
 		case dbinfo := <-conf.ChanDataBase:
@@ -73,6 +75,9 @@ func (f *FactoryGameLogic) listenEtcdConf() {
 		}
 
 	}
+}
+func (f *FactoryGameLogic) InitAppMain(appMain base.IGameLogic) {
+	f.AppLogic = appMain
 }
 func (f *FactoryGameLogic) Start(netgate *gate.Gate) error {
 	base.NetGate = netgate
@@ -98,7 +103,12 @@ func (f *FactoryGameLogic) CreateRoom() error {
 	return nil
 }
 func (f *FactoryGameLogic) OnCreateTable() base.ITable {
-	return &base.GameTable{}
+	table := &base.GameTable{}
+	f.AppLogic.CreateTable(table)
+	return table
+}
+func (f *FactoryGameLogic) CreateTable(base.ITable) {
+	//添加自定义桌子数据
 }
 func (f *FactoryGameLogic) GetTable(tableid int32) (base.ITable, error) {
 	if tableid < 1 || tableid > conf.RoomInfo.MaxTableNum {
@@ -112,12 +122,14 @@ func (f *FactoryGameLogic) OnCreatePlayer(addr string) base.IPlayerNode {
 	} else if _, ok := conf.MapMiddlePlatConnServer[addr]; ok {
 		return &base.MiddlePlatNode{}
 	} else {
-		return f.CreateClientPlayer()
+		playerNode := &base.ClientNode{}
+		f.AppLogic.CreateClientPlayer(playerNode)
+		return playerNode
 	}
-
 }
-func (f *FactoryGameLogic) CreateClientPlayer() base.IPlayerNode {
-	return &base.ClientNode{}
+func (f *FactoryGameLogic) CreateClientPlayer(player base.IPlayerNode) {
+	//此处将自定义数据添加进去
+	player.SetUserData(nil)
 }
 
 func (f *FactoryGameLogic) OnPlayerConnect(player base.IPlayerNode) {
@@ -197,7 +209,9 @@ func (f *FactoryGameLogic) OnPlayerClose(player base.IPlayerNode) {
 		if playernode.Usergamestatus >= base.PlayerstatuWaitAuthen {
 			f.handleloginout(player)
 			f.OnTableLeave(playernode)
-			f.CallBackLogOut(player)
+			if f.AppLogic != nil {
+				f.AppLogic.CallBackLogOut(player)
+			}
 		}
 		//如果是被代理节点,推送到代理解除路由
 		if playernode.IsProxyedNode() {
@@ -211,7 +225,9 @@ func (f *FactoryGameLogic) OnPlayerClose(player base.IPlayerNode) {
 	} else {
 		log.Debug("playernode:%v 游戏状态退出 Usergamestatus:%v", playernode.Usernodeinfo.Userid, playernode.Usergamestatus)
 		playernode.Useroffline = true
-		f.CallBackOffline(player)
+		if f.AppLogic != nil {
+			f.AppLogic.CallBackOffline(player)
+		}
 		player.HandleAutoGame()
 	}
 	playernode.Netagent = nil
@@ -259,12 +275,12 @@ func (f *FactoryGameLogic) Gamestart(table base.ITable) {
 	f.Curgamenum++
 	log.Debug("GameStart")
 	table.GameBegin(f.Curgamenum)
-	f.CallBackGameStart(table)
+	f.AppLogic.CallBackGameStart(table)
 }
 
 //SendRoomInfo 同步房间通用信息到c端，不要重写
 func (f *FactoryGameLogic) SendRoomInfo(player base.IPlayerNode) {
-	f.CallBackSendRoomInfo(player)
+	f.AppLogic.CallBackSendRoomInfo(player)
 }
 
 //SavePlayergamecoin 游戏结束调用，用户游戏过程中产生的金币变化更新
@@ -408,7 +424,6 @@ func (f *FactoryGameLogic) ApplyRobot(robot model.ApplyRobotInfo) (base.IPlayerN
 	base.SendRspMsg(player, loginRes)
 	return player, nil
 }
-
 func (f *FactoryGameLogic) CallBackSendRoomInfo(player base.IPlayerNode)                  {}
 func (f *FactoryGameLogic) CallBackSitDown(player base.IPlayerNode, table base.ITable)    {}
 func (f *FactoryGameLogic) CallLoginSuccess(player base.IPlayerNode)                      {}
@@ -419,8 +434,12 @@ func (f *FactoryGameLogic) CallBackHandUp(player base.IPlayerNode, table base.IT
 func (f *FactoryGameLogic) CallBackGameStart(table base.ITable)                           {}
 func (f *FactoryGameLogic) CallBackLoginAgain(player base.IPlayerNode)                    {}
 func (f *FactoryGameLogic) AutoPlay(player base.IPlayerNode)                              {}
-func (f *FactoryGameLogic) AppMsgCallBackInit(map[string]base.MsgHandler)                 {}
-func (f *FactoryGameLogic) CallBackEtcdConf(action string, key string, value string)      {}
+func (f *FactoryGameLogic) AppMsgCallBackInit(map[string]base.MsgHandler) {
+	log.Debug("FactoryGameLogic AppMsgCallBackInit")
+}
+func (f *FactoryGameLogic) CallBackEtcdConf(action string, key string, value string) {
+	log.Debug(" FactoryGameLogic CallBackEtcdConf key:%s value:%s", key, value)
+}
 func (f *FactoryGameLogic) OnDestroy() {
 	//清除所有在线
 	for _, playerint := range base.PlayerList.GetAllPlayers() {
@@ -431,4 +450,8 @@ func (f *FactoryGameLogic) OnDestroy() {
 //IsFrontend 是否是前端服务器
 func (f *FactoryGameLogic) IsFrontend() bool {
 	return conf.FrontentNode
+}
+
+func (f *FactoryGameLogic) SyncOldPlayerData(oldplayer base.IPlayerNode, newplayer base.IPlayerNode) {
+
 }

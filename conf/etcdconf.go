@@ -61,29 +61,15 @@ func StartEtcd() {
 	}
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", RedisEtcdDir))
-	if Server.IsGray == 1 {
-		if RoomInfo.GameID > 0 {
-			roomInfoKey = Server.SysClusterName + "/" + fmt.Sprintf("%s%sGameList/%s/Level_%d/%s",
-				GrayPathPrefix, APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
-			Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%ssGameList/%s",
-				GrayPathPrefix, APPEtcdDir, Server.CfgDir))
-		} else {
-			roomInfoKey = Server.SysClusterName + "/" + fmt.Sprintf("%s%s%s/%s", GrayPathPrefix, APPEtcdDir, Server.CfgDir, Server2Etcd.key)
-			Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s%s",
-				GrayPathPrefix, APPEtcdDir, Server.CfgDir))
-		}
+	if RoomInfo.GameID > 0 {
+		roomInfoKey = GetEtcdPrefix() + fmt.Sprintf("%sGameList/%s/Level_%d/%s",
+			APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
+		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%ssGameList/%s",
+			GrayPathPrefix, APPEtcdDir, Server.CfgDir))
 	} else {
-		if RoomInfo.GameID > 0 {
-			roomInfoKey = Server.SysClusterName + "/" + fmt.Sprintf("%sGameList/%s/Level_%d/%s",
-				APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
-			Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%sGameList/%s",
-				APPEtcdDir, Server.CfgDir))
-		} else {
-			roomInfoKey = Server.SysClusterName + "/" + fmt.Sprintf("%s%s/%s", APPEtcdDir, Server.CfgDir, Server2Etcd.key)
-			Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s",
-				APPEtcdDir, Server.CfgDir))
-		}
-
+		roomInfoKey = GetEtcdPrefix() + fmt.Sprintf("%s%s/%s", APPEtcdDir, Server.CfgDir, Server2Etcd.key)
+		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s%s",
+			GrayPathPrefix, APPEtcdDir, Server.CfgDir))
 	}
 	writeRoomInfo2Etcd()
 	for _, v := range Server.EtcdKey {
@@ -98,6 +84,8 @@ func StartEtcd() {
 			log.Error("err:%v", err)
 		}
 		gameAPI := client.NewKeysAPI(etcdClient)
+
+		//系统级配置，不分灰度
 		strPath := Server.SysClusterName + "/" + v
 		resp, err := gameAPI.Get(context.Background(), strPath,
 			&client.GetOptions{Recursive: true, Sort: false, Quorum: true})
@@ -287,6 +275,7 @@ func jsonConf2Struct(action string, key string, value string) {
 			}
 		}
 	} else {
+		log.Debug("jsonConf2Struct key:%s value:%s", key, value)
 		childConf := EtcdChildConfig{
 			Action: action,
 			Key:    key,
@@ -316,5 +305,14 @@ func watchGateServer(serverName string) {
 			time.Sleep(2 * time.Second)
 		}
 		gameAPI = nil
+	}
+}
+
+//GetEtcdPrefix 获取本系统配置前缀
+func GetEtcdPrefix() string {
+	if Server.IsGray == 0 {
+		return Server.SysClusterName + "/"
+	} else {
+		return Server.SysClusterName + GrayPathPrefix
 	}
 }

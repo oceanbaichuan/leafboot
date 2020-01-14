@@ -34,6 +34,8 @@ type IPlayerNode interface {
 	GameBegin()
 	GameEnd()
 	HandleAutoGame()
+	SetUserData(data interface{})
+	UserData() interface{}
 }
 type PlayerNodeList struct {
 	onlinelist map[int64]IPlayerNode

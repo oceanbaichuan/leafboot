@@ -5,4 +5,6 @@ type ITable interface {
 	ResetTable()
 	GameBegin(gamenum int64)
 	GameEnd()
+	SetCustomData(data interface{})
+	CustomData() interface{}
 }

@@ -148,7 +148,7 @@ func (f *FactoryGameLogic) handleLoginAgain(player base.IPlayerNode) {
 		}
 	}
 	base.SendRspMsg(succplayer, loginagainres)
-	f.CallBackLoginAgain(player)
+	f.AppLogic.CallBackLoginAgain(player)
 }
 func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 	succplayer := args[1].(*base.ClientNode)
@@ -235,7 +235,7 @@ func (f *FactoryGameLogic) handleLoginRes(args []interface{}) {
 			if oldplayer.Usergamestatus > base.PlayerstatuWaitAuthen &&
 				oldplayer.Usergamestatus < base.PlayerstatuBeginGame {
 				//将老节点属性的增量值同步到新节点
-				succplayer.SyncOldPlayerData(oldplayer)
+				f.AppLogic.SyncOldPlayerData(oldplayer, succplayer)
 			}
 		}
 	} else if conf.RoomInfo.RoomCoinDownLimit != 0 && dbloginres.GameCoin < conf.RoomInfo.RoomCoinDownLimit {
@@ -437,7 +437,7 @@ func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, req 
 	if conf.RoomInfo.GameStartPlayer < conf.RoomInfo.MaxTableChair {
 		tableitem.SetTimer(base.Tabletimer_checkbegin, time.Duration(conf.RoomInfo.GameStartCheckTime)*time.Second, tableitem.OnTimerCheckBegin)
 	}
-	f.CallBackSitDown(player, fittable)
+	f.AppLogic.CallBackSitDown(player, fittable)
 }
 func (f *FactoryGameLogic) AutoSearchTable(playernode *base.ClientNode) (base.ITable, int32, int32, error) {
 	var oktable base.ITable
@@ -564,11 +564,11 @@ func (f *FactoryGameLogic) handleHandUpReq(args []interface{}) {
 	}
 	//记录准备时间点
 	player.Userlastopertime = time.Now()
-	f.CallBackHandUp(player, gametable)
+	f.AppLogic.CallBackHandUp(player, gametable)
 	gametable.ReadyPlayers++
 	if gametable.ReadyPlayers == conf.RoomInfo.GameStartPlayer &&
 		gametable.TableStatus == 0 {
-		f.Gamestart(gametable)
+		f.AppLogic.Gamestart(gametable)
 	}
 }
 func (f *FactoryGameLogic) handleLeaveTableReq(args []interface{}) {
@@ -648,7 +648,7 @@ func (f *FactoryGameLogic) OnTableLeave(player *base.ClientNode) {
 	if gametable.SitdownPlayers <= 0 {
 		gametable.RecoverTable()
 	}
-	f.CallBackLeaveTable(player, gametable)
+	f.AppLogic.CallBackLeaveTable(player, gametable)
 }
 func (f *FactoryGameLogic) handleLoginOut(args []interface{}) {
 	playerInt := args[1].(base.IPlayerNode)

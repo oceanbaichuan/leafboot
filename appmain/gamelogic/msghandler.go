@@ -44,7 +44,7 @@ func (f *FactoryGameLogic) RegisteGameMsgCallback(skeleton *module.Skeleton) {
 	mapReqHandler["LeaveScene"] = f.handleLoginOut
 	mapReqHandler["LeaveTable"] = f.handleLeaveTableReq
 	//此处添加机器人框架消息句柄
-	f.AppMsgCallBackInit(mapReqHandler)
+	f.AppLogic.AppMsgCallBackInit(mapReqHandler)
 }
 func (f *FactoryGameLogic) RegisteLoginMsgCallback(skeleton *module.Skeleton) {
 	//skeleton.RegisterChanRPC(reflect.TypeOf(&msg.Logingamereq{}), f.handleLoginGameReq)
