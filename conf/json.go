@@ -135,16 +135,6 @@ func init() {
 	if Server.SysClusterName == "" {
 		log.Fatal("SysClusterName must not be empty string!!")
 	}
-	//加载房间配置
-	data, err = ioutil.ReadFile("conf/room.json")
-	if err != nil {
-		log.Fatal("%v", err)
-	}
-	err = json.Unmarshal(data, &RoomInfo)
-	log.Debug("RoomInfo:%v", RoomInfo)
-	if err != nil {
-		log.Fatal("%v", err)
-	}
 	//解析数据库名称列表
 	for _, v := range Server.DbList {
 		Server.MapDBName[v.DataBase] = true
@@ -165,6 +155,18 @@ func init() {
 		gameID, err := strconv.Atoi(roomflags[1])
 		if err != nil {
 			log.Fatal("%v", err)
+		}
+		if gameID > 0 {
+			//加载房间配置
+			data, err = ioutil.ReadFile("conf/room.json")
+			if err != nil {
+				log.Fatal("%v", err)
+			}
+			err = json.Unmarshal(data, &RoomInfo)
+			log.Debug("RoomInfo:%v", RoomInfo)
+			if err != nil {
+				log.Fatal("%v", err)
+			}
 		}
 		RoomInfo.GameID = int32(gameID)
 	}
