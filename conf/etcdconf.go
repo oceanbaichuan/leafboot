@@ -62,14 +62,14 @@ func StartEtcd() {
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", DBEtcdDir))
 	Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s", RedisEtcdDir))
 	if RoomInfo.GameID > 0 {
-		roomInfoKey = GetEtcdPrefix() + fmt.Sprintf("%sGameList/%s/Level_%d/%s",
+		roomInfoKey = GetFullEtcdPrefix() + fmt.Sprintf("%sGameList/%s/Level_%d/%s",
 			APPEtcdDir, Server.CfgDir, RoomInfo.RoomLevel, Server2Etcd.key)
-		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%ssGameList/%s",
-			GrayPathPrefix, APPEtcdDir, Server.CfgDir))
+		Server.EtcdKey = append(Server.EtcdKey, GetEtcdPrefix()+fmt.Sprintf("%sGameList/%s",
+			APPEtcdDir, Server.CfgDir))
 	} else {
-		roomInfoKey = GetEtcdPrefix() + fmt.Sprintf("%s%s/%s", APPEtcdDir, Server.CfgDir, Server2Etcd.key)
-		Server.EtcdKey = append(Server.EtcdKey, fmt.Sprintf("%s%s%s",
-			GrayPathPrefix, APPEtcdDir, Server.CfgDir))
+		roomInfoKey = GetFullEtcdPrefix() + fmt.Sprintf("%s%s/%s", APPEtcdDir, Server.CfgDir, Server2Etcd.key)
+		Server.EtcdKey = append(Server.EtcdKey, GetEtcdPrefix()+fmt.Sprintf("%s%s",
+			APPEtcdDir, Server.CfgDir))
 	}
 	writeRoomInfo2Etcd()
 	for _, v := range Server.EtcdKey {
@@ -308,11 +308,20 @@ func watchGateServer(serverName string) {
 	}
 }
 
-//GetEtcdPrefix 获取本系统配置前缀
-func GetEtcdPrefix() string {
+//GetEtcdPrefix 获取本系统配置全路径前缀
+func GetFullEtcdPrefix() string {
 	if Server.IsGray == 0 {
 		return Server.SysClusterName + "/"
 	} else {
 		return Server.SysClusterName + GrayPathPrefix
+	}
+}
+
+//GetEtcdPrefix 相对集群根目录的子前缀
+func GetEtcdPrefix() string {
+	if Server.IsGray == 0 {
+		return ""
+	} else {
+		return GrayPathPrefix
 	}
 }

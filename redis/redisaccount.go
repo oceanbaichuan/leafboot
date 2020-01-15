@@ -14,11 +14,12 @@ import (
 )
 
 const (
-	ACCOUNT_MAIN_KEY      = "AccountMain:%s"
-	ACCOUNT_LOGIN_KEY     = "AccountLogin:%d"
-	ACCOUNT_TOKEN_KEY     = "AccountToken:%d"
-	ACCOUNT_THIRDINFO_KEY = "AccountThirdInfo:%d"
-	ACCOUNT_SECURITY_KEY  = "AccountSecurity:%d"
+	ACCOUNT_ACCOUNTMAIN_KEY = "AccountMain:%s"
+	ACCOUNT_USERIDMAIN_KEY  = "UserIDMain:%d" //关联账号名
+	ACCOUNT_LOGIN_KEY       = "AccountLogin:%d"
+	ACCOUNT_TOKEN_KEY       = "AccountToken:%d"
+	ACCOUNT_THIRDINFO_KEY   = "AccountThirdInfo:%d"
+	ACCOUNT_SECURITY_KEY    = "AccountSecurity:%d"
 )
 
 func SelectAccount(redisName string, datareq *msg.Accountrdatareq) ([]interface{}, error) {
@@ -44,9 +45,14 @@ func SelectAccount(redisName string, datareq *msg.Accountrdatareq) ([]interface{
 		} else {
 			log.Error("redis SelectAccount err:%v", err)
 		}
-
+		accvalue, err = rdconn.Get(fmt.Sprintf(ACCOUNT_USERIDMAIN_KEY, datareq.Userid)).Result()
+		if err != nil {
+			return nil, errors.New("user is not found")
+		}
+		//uid的account覆盖客户端给的，避免用户串号
+		datareq.Account = accvalue
 	}
-	accvalue, err := rdconn.Get(fmt.Sprintf(ACCOUNT_MAIN_KEY, datareq.Account)).Result()
+	accvalue, err := rdconn.Get(fmt.Sprintf(ACCOUNT_ACCOUNTMAIN_KEY, datareq.Account)).Result()
 	if err != nil {
 		log.Debug("redis SelectAccount account:%s err:%v", datareq.Account, err)
 		return nil, err
@@ -60,7 +66,7 @@ func SelectAccount(redisName string, datareq *msg.Accountrdatareq) ([]interface{
 	if err != nil {
 		return nil, err
 	}
-	//redis中不存在token时，需要匹配密码
+	//token匹配失败时，需要匹配密码
 	if !bHasToken && accountInfo.Passwd != datareq.Passwd {
 		strErr := fmt.Sprintf("redis SelectAccount userID:%d clientpasswd:%s redispasswd:%s",
 			datareq.Userid, datareq.Passwd, accountInfo.Passwd)
@@ -145,7 +151,7 @@ func WriteAccountInfo(redisName string, token string, aInfo model.AccountMainInf
 	rdconn.Pipelined(func(accPipe redis.Pipeliner) error {
 		propStr, err := json.Marshal(&aInfo)
 		if err == nil {
-			accPipe.SetNX(fmt.Sprintf(ACCOUNT_MAIN_KEY, aInfo.Account), propStr, REDIS_ACCOUNT_TTF)
+			accPipe.SetNX(fmt.Sprintf(ACCOUNT_ACCOUNTMAIN_KEY, aInfo.Account), propStr, REDIS_ACCOUNT_TTF)
 		}
 		propStr, err = json.Marshal(&aThirdInfo)
 		if err == nil {

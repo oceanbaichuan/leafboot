@@ -101,13 +101,15 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 			account.Token = acResult[4].(string)
 			myredis.WriteAccountToken(accountdbName, account.Token, accountInfo.UserID)
 		}
-		updateAcountAllTTF([]string{
-			fmt.Sprintf(myredis.ACCOUNT_MAIN_KEY, account.Account),
+		UpdateAcountAllTTF([]string{
+			fmt.Sprintf(myredis.ACCOUNT_USERIDMAIN_KEY, account.Userid),
+			fmt.Sprintf(myredis.ACCOUNT_ACCOUNTMAIN_KEY, account.Account),
 			fmt.Sprintf(myredis.ACCOUNT_THIRDINFO_KEY, account.Userid),
 			fmt.Sprintf(myredis.ACCOUNT_SECURITY_KEY, account.Userid),
 			fmt.Sprintf(myredis.ACCOUNT_LOGIN_KEY, account.Userid),
 			fmt.Sprintf(myredis.ACCOUNT_TOKEN_KEY, account.Userid),
 		}, account.Userid, []time.Duration{
+			myredis.REDIS_ACCOUNT_TTF,
 			myredis.REDIS_ACCOUNT_TTF,
 			myredis.REDIS_ACCOUNT_TTF,
 			myredis.REDIS_ACCOUNT_TTF,
@@ -136,7 +138,7 @@ func SelectAccount(datareq *msg.Accountrdatareq, account *msg.LoginRes) error {
 	log.Debug("%v", account)
 	return nil
 }
-func updateAcountAllTTF(key []string, userID int64, ttfs []time.Duration) {
+func UpdateAcountAllTTF(key []string, userID int64, ttfs []time.Duration) {
 	myredis.UpdateRedisTTF(accountdbName, userID, key, ttfs)
 }
 func UpdateATokenTTF(userID int64) {

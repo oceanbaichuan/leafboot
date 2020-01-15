@@ -149,6 +149,8 @@ func getMasterRW(dbName string, userID int64) (*gorm.DB, error) {
 				return dbSharding.dbconn, nil
 			} else if dbSharding.dbinfo.MinUID <= userID && dbSharding.dbinfo.MaxUID == -1 { //上不封顶
 				return dbSharding.dbconn, nil
+			} else if dbName == "plat_account_db" {
+				return dbSharding.dbconn, nil
 			}
 		}
 	}
@@ -163,6 +165,8 @@ func getMasterR(dbName string, userID int64) (*gorm.DB, error) {
 				return dbSharding.dbconn, nil
 			} else if dbSharding.dbinfo.MinUID <= userID && dbSharding.dbinfo.MaxUID == -1 { //上不封顶
 				return dbSharding.dbconn, nil
+			} else if dbName == "plat_account_db" {
+				return dbSharding.dbconn, nil
 			}
 		}
 	}
@@ -176,6 +180,8 @@ func getSlaveR(dbName string, userID int64) (*gorm.DB, error) {
 			} else if dbSharding.dbinfo.MinUID == dbSharding.dbinfo.MaxUID { //不限分区
 				return dbSharding.dbconn, nil
 			} else if dbSharding.dbinfo.MinUID <= userID && dbSharding.dbinfo.MaxUID == -1 { //上不封顶
+				return dbSharding.dbconn, nil
+			} else if dbName == "plat_account_db" {
 				return dbSharding.dbconn, nil
 			}
 		}

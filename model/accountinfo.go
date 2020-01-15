@@ -42,7 +42,10 @@ func (a AccountSecurityInfo) TableName() string {
 //AccountThirdpartInfo 用户第三方信息
 type AccountThirdpartInfo struct {
 	UserID  int64  `gorm:"primary_key:true" json:"user_id"` //用户ID
+	AppID   string `gorm:"primary_key:true" json:"app_id"`  //用户ID
 	OpenID  string `json:"open_id"`
+	UnionID string `json:"union_id"`
+	Gender  int8   `json:"gender"` //第三方性别
 	HeadUrl string `json:"head_url"`
 }
 

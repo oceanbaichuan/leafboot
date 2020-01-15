@@ -3,7 +3,6 @@ package myredis
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -65,15 +64,7 @@ func OpenRedisGroup(dbinfo conf.RedisInfo) error {
 			dbinfo: dbinfo,
 			dbconn: tmpconn,
 		}
-		if strings.Contains(dbinfo.RedisName, "plat_account_db") {
-			mapDBList["plat_account_db"] = append(mapDBList["plat_account_db"], dbSharding)
-		} else if strings.Contains(dbinfo.RedisName, "game_user_db") {
-			mapDBList["game_user_db"] = append(mapDBList["game_user_db"], dbSharding)
-		} else if strings.Contains(dbinfo.RedisName, "game_data_db") {
-			mapDBList["game_data_db"] = append(mapDBList["game_data_db"], dbSharding)
-		} else if strings.Contains(dbinfo.RedisName, "game_log_db") {
-			mapDBList["game_log_db"] = append(mapDBList["game_log_db"], dbSharding)
-		}
+		mapDBList[dbinfo.RedisName] = append(mapDBList[dbinfo.RedisName], dbSharding)
 	} else {
 		return err
 	}
@@ -100,6 +91,8 @@ func GetRedis(dbName string, userID int64) (*redis.Client, error) {
 			} else if dbSharding.dbinfo.MinUID == dbSharding.dbinfo.MaxUID { //不限分区
 				return dbSharding.dbconn, nil
 			} else if dbSharding.dbinfo.MinUID <= userID && dbSharding.dbinfo.MaxUID == -1 { //上不封顶
+				return dbSharding.dbconn, nil
+			} else if dbName == "plat_account_db" {
 				return dbSharding.dbconn, nil
 			}
 		}

@@ -381,6 +381,8 @@ func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, req 
 	if canLevel > 0 && tableitem.SitdownPlayers == 1 {
 		tableitem.TableCurLevel = canLevel
 	}
+	player.Userchairid = sitres.Chairid
+	player.Usertableid = sitres.Tableid
 	for _, playerint := range tableitem.TablePlayers {
 		if playerint != nil {
 			playernode := playerint.(*base.ClientNode)
@@ -403,8 +405,6 @@ func (f *FactoryGameLogic) ArrangePlayerSitDownReq(player *base.ClientNode, req 
 			sitres.Players = append(sitres.Players, tableplayer)
 		}
 	}
-	player.Userchairid = sitres.Chairid
-	player.Usertableid = sitres.Tableid
 	player.Usergamestatus = base.PlayerstatuHaveSitDown
 	base.SendRspMsg(player, sitres)
 	//通知其他人，玩家入座
