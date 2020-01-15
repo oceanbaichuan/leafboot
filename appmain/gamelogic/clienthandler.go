@@ -453,7 +453,7 @@ func (f *FactoryGameLogic) AutoSearchTable(playernode *base.ClientNode) (base.IT
 			if playerint == nil {
 				oktable = table
 				tableid = table.TableID
-				tablechair = int32(j) + 1
+				tablechair = int32(j)
 				table.TablePlayers[j] = playernode
 				break
 			}
@@ -478,15 +478,15 @@ func (f *FactoryGameLogic) FixSearchTable(playernode *base.ClientNode, tableid i
 	}
 	for j, playerint := range fittable.TablePlayers {
 		//log.Debug("j:%v playerint:%v", j, playerint)
-		if int32(j) == chairid-1 && playerint == nil {
+		if int32(j) == chairid && playerint == nil {
 			fittable.TablePlayers[j] = playernode
 			oktable = fittable
-			chairid = int32(j) + 1
+			chairid = int32(j)
 			break
-		} else if chairid < 1 && playerint == nil {
+		} else if chairid < 0 && playerint == nil {
 			fittable.TablePlayers[j] = playernode
 			oktable = fittable
-			chairid = int32(j) + 1
+			chairid = int32(j)
 			break
 		}
 	}
